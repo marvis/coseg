@@ -15,6 +15,9 @@
 #include <cmath>
 #include "component_tree.h"
 #include "myalgorithms.h"
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 using namespace std;
 
