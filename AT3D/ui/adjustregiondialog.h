@@ -18,6 +18,8 @@ protected:
 
 private:
     Ui::AdjustRegionDialog *ui;
+
+private slots:
 };
 
 #endif // ADJUSTREGIONDIALOG_H

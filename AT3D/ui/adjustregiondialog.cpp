@@ -1,6 +1,6 @@
 #include "adjustregiondialog.h"
 #include "ui_adjustregiondialog.h"
-
+#include <QMessageBox>
 AdjustRegionDialog::AdjustRegionDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::AdjustRegionDialog)

@@ -8,7 +8,7 @@
 #include <cassert>
 #include "../myalgorithms.h"
 #include "../component_tree.h"
-
+#include "ui/adjustregiondialog.h"
 using namespace std;
 
 /************************************
@@ -819,5 +819,7 @@ QTreeWidgetItem* getTreeItem(ComponentTree & tree, QTreeWidget* widget)
 
 void AT3DVIEW::on_adjustRegionButton_clicked()
 {
-
+    //if(!isLoaded())return;
+    AdjustRegionDialog * dlg = new AdjustRegionDialog(this);
+    dlg->exec();
 }
