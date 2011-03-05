@@ -7,6 +7,8 @@
 //
 
 #include <cstdlib>
+#include <cstring>
+#include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <ctime>
@@ -14,6 +16,7 @@
 #include "../component_tree.h"
 #include "../myalgorithms.h"  //split
 #include "cell_track.h"
+
 using namespace std;
 
 void quit();

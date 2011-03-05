@@ -17,37 +17,37 @@ using namespace std;
 class ComponentTree
 {
 public:	
-	struct Element;
+	struct Pixel;
 	struct Node;
 	typedef int Vertex;
 	typedef vector<Vertex> Vertices;
 	typedef vector<int> Path;
 	typedef vector<Path> Paths;
-	typedef int ElementId;
 	
 	enum SEARCH_TYPE{PRE_ORDER, POST_ORDER, BREADTH_FIRST};
 	
-	struct Element
+	struct Pixel
 	{
-		ElementId  next;		 // the next element
+		int  next;		 // the next pixel
+		unsigned short level;
 	};
 	typedef vector<Node*> Nodes;
 	
 	struct Node
 	{
-		int label;
+		int label;        // the store index in m_nodes, start from 0
+                int higher_level;   // the higher level
 		int level;        // the lowest level
 		double mean;
 		double std;
 		double centerX;
 		double centerY;
 		double centerZ;
-		//int elementCount;
-		int size; // the element in the component exclude the elements in child nodes
+
+		int alpha_size; // the pixel in the component exclude the pixels in child nodes
+		int beta_size; // the total number of pixels 
 		Node* parent; // we will make Node as dynamic memory, for the label is not easy to 
-		// set when the set is create this value will be set until the 
-		// component tree is built.
-		ElementId entryId; //element will set static, the entry shoud set as the one of the lowest element in this component 
+		int entry_pixel; //pixel will set static, the entry shoud set as the one of the lowest pixel in this component 
 		vector<Node*> childs;
 	};
 	
@@ -78,7 +78,7 @@ public:
 	
 	int nodeCount() const;
 	int leafCount() const;
-	int elementCount() const;
+	int pixelCount() const;
 	
 	void printVertices(int label = -1) const;
 	void printTree(int label = -1) const;
@@ -93,7 +93,9 @@ private:
 	void setCenter();
 	void setPaths();
 	void setOrders();
-	Node* MergeNodes(Node* curNode, Node* adjNode);
+        Node* MergeNodes(Node* fromNode, Node* toNode);
+        Node* MergeSingleNodes(Node* fromNode, Node* toNode);
+
 	
 	//8 memervariable, 4 containers, 3 counters, 1 root
 public:
@@ -105,14 +107,14 @@ private:
 	int m_height;
 	int m_depth;	
 	//3 counters
-	int m_numElements;
+        int m_numPixels;
 	int m_numNodes;
 	int m_numLeafs;
 	
 	//4 contaners
 	Paths m_paths;
 	Nodes m_leafs; //store all the leafs
-	vector<Element> m_elements;
+        vector<Pixel> m_pixels;
 	Nodes m_nodes; //store the nodes in post order
 	vector<Node*> m_postOrder;
 	vector<Node*> m_preOrder;
@@ -140,10 +142,10 @@ public:
 	};
 	
 	class const_iterator
-	{
+        {
 	public:
 		const_iterator();
-		void operator=(const_iterator);
+                void operator=(const_iterator);
 		const Node* operator*() const;
 		const_iterator operator++(int);   //
 		bool operator!=(const_iterator);  // becareful the const_iterator should not be referenced type
@@ -164,39 +166,39 @@ class DisjointSets
 		
 		// Create an empty DisjointSets data structure
 		DisjointSets();
-		// Create a DisjointSets data structure with a specified number of elements (with element id's from 0 to count-1)
+		// Create a DisjointSets data structure with a specified number of pixels (with pixel id's from 0 to count-1)
 		DisjointSets(int count);
 		// Copy constructor
 		DisjointSets(const DisjointSets & s);
 		// Destructor
 		~DisjointSets();
 		
-		// Find the set identifier that an element currently belongs to.
+		// Find the set identifier that an pixel currently belongs to.
 		// Note: some internal data is modified for optimization even though this method is consant.
-		int FindSet(int element) const;
-		// Combine two sets into one. All elements in those two sets will share the same set id that can be gotten using FindSet.
+		int FindSet(int pixel) const;
+		// Combine two sets into one. All pixels in those two sets will share the same set id that can be gotten using FindSet.
 		int Union(int setId1, int setId2);
-		// Add a specified number of elements to the DisjointSets data structure. The element id's of the new elements are numbered
-		// consequitively starting with the first never-before-used elementId.
-		void AddElements(int numToAdd);
-		// Returns the number of elements currently in the DisjointSets data structure.
-		int NumElements() const;
+		// Add a specified number of pixels to the DisjointSets data structure. The pixel id's of the new pixels are numbered
+		// consequitively starting with the first never-before-used pixelId.
+		void AddPixels(int numToAdd);
+		// Returns the number of pixels currently in the DisjointSets data structure.
+		int NumPixels() const;
 		// Returns the number of sets currently in the DisjointSets data structure.
 		int NumSets() const;
 		
 	private:
 		
-		// Internal Node data structure used for representing an element
+		// Internal Node data structure used for representing an pixel
 		struct Node
 		{
 			int rank; // This roughly represent the max height of the node in its subtree
-			int index; // The index of the element the node represents
+			int index; // The index of the pixel the node represents
 			Node* parent; // The parent node of the node
 		};
 		
-		int m_numElements; // the number of elements currently in the DisjointSets data structure.
+                int m_numPixels; // the number of pixels currently in the DisjointSets data structure.
 		int m_numSets; // the number of sets currently in the DisjointSets data structure.
-		std::vector<Node*> m_nodes; // the list of nodes representing the elements
+		std::vector<Node*> m_nodes; // the list of nodes representing the pixels
 	};
 
 #endif

@@ -794,7 +794,7 @@ QTreeWidgetItem* getTreeItem(ComponentTree & tree, QTreeWidget* widget)
 	
 	strList<<QObject::tr("%1").arg((*it)->label);
 	strList<<QObject::tr("%1").arg((*it)->level);
-	strList<<QObject::tr("%1").arg((*it)->size);
+        strList<<QObject::tr("%1").arg((*it)->alpha_size);
 	rootItem = new QTreeWidgetItem(widget,strList);
 	rootItem->setExpanded(true);
 	item[*it] = rootItem;
@@ -804,7 +804,7 @@ QTreeWidgetItem* getTreeItem(ComponentTree & tree, QTreeWidget* widget)
 		strList.clear();
 		strList<<QObject::tr("%1").arg((*it)->label);
 		strList<<QObject::tr("%1").arg((*it)->level);
-		strList<<QObject::tr("%1").arg((*it)->size);
+                strList<<QObject::tr("%1").arg((*it)->alpha_size);
 
 		QTreeWidgetItem* parent_item = item[(*it)->parent];
 		

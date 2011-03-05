@@ -12,7 +12,7 @@
 #include <math.h>
 #include <sstream> //istringstream
 #include <assert.h>
-#include <lp_lib.h>
+#include "lp_lib.h"
 #include "cell_track.h"
 #include "../component_tree.h"
 #include "../myalgorithms.h"
@@ -248,7 +248,7 @@ bool CellTrack::Alignment::align(ComponentTree& tree1, ComponentTree& tree2)
 	/*
 	 * 3. set weight matrix
 	 */
-	int numVertices = tree1.elementCount();
+	int numVertices = tree1.pixelCount();
 	int* matrix1 = tree1.getMappingMatrix();
 	int* matrix2 = tree2.getMappingMatrix();
 	// 3.1 get the overlap of each subset
@@ -313,7 +313,7 @@ bool CellTrack::Alignment::align(ComponentTree& tree1, ComponentTree& tree2)
 		for(int j = 0; j < m_numVars2; j++)
 		{
 			intersection = m_weightMatrix[i][j];
-			joint = tree1.getNode(i)->size + tree2.getNode(j)->size - intersection;
+			joint = tree1.getNode(i)->alpha_size + tree2.getNode(j)->alpha_size - intersection;
 			assert(joint > 0.0001);
 			m_weightMatrix[i][j] = (float)intersection/joint;
 		}
@@ -499,7 +499,7 @@ bool CellTrack::Alignment::align(ComponentTree &tree, Frame& f1, Frame & f2)
 	//which is more convenient than store label value
 	int* matrix1 = tree.getMatrix(labels1,values1, -1);
 	int* matrix2 = tree.getMatrix(labels2,values2, -1);
-	int numVertices = tree.elementCount();
+	int numVertices = tree.pixelCount();
 	
 	// 2.1 set the num of overlap points
 	for(int v = 0; v < numVertices ; v++)
@@ -519,7 +519,7 @@ bool CellTrack::Alignment::align(ComponentTree &tree, Frame& f1, Frame & f2)
 		for(int j = 0; j < m_numVars2; j++)
 		{
 			intersection = m_weightMatrix[i][j];
-			joint = tree.getNode(labels1[i])->size + tree.getNode(labels2[j])->size - intersection;
+			joint = tree.getNode(labels1[i])->alpha_size + tree.getNode(labels2[j])->alpha_size - intersection;
 			assert(joint > 0.0001);
 			m_weightMatrix[i][j] = (float)intersection/joint;
 		}
@@ -1657,7 +1657,7 @@ CellTrack::Frame merge_frames(ComponentTree &tree, double* row, CellTrack::Frame
 				CellTrack::Cell* c1 = f1[i];
 				CellTrack::Cell* c2 = f2[j];
 
-				if((tree.getNode(c1->label))->size < (tree.getNode(c2->label))->size)
+				if((tree.getNode(c1->label))->alpha_size < (tree.getNode(c2->label))->alpha_size)
 				{
 					c1->nextLabel = c2->nextLabel;     // if c2 label is larger , assign c2's nextLabel to c1's label
 					c1->label = c2->nextLabel;

@@ -1,7 +1,7 @@
 CC = gcc
 CXX = g++ -g -Wall
 
-CXXFLAGS = -ltiff -llpsolve55
+CXXFLAGS = -ltiff  -llpsolve55
 
 OBJ = cell_track.o ../myalgorithms.o ../component_tree.o  main.o
 

@@ -34,7 +34,7 @@ using namespace std;
 ComponentTree::ComponentTree()
 {
 	m_root = NULL;
-	m_numElements = 0;
+        m_numPixels = 0;
 	m_numNodes = 0;
 	m_numLeafs = 0;
 }
@@ -45,7 +45,7 @@ ComponentTree::ComponentTree(char * imgfile, int _minSize, int _maxSize, int _si
 
 /********************************************************************
  * ComponentTree : construct component tree by saved component tree file
- * load : m_numElements, m_numNods, m_numLeafs, m_elements, m_nodes, m_leafs
+ * load : m_numPixels, m_numNods, m_numLeafs, m_pixels, m_nodes, m_leafs
  *        m_root
  *        m_width, m_height, m_depth
  * setPaths : m_paths
@@ -70,7 +70,7 @@ ComponentTree::~ComponentTree()
  * create : create component tree
  * 
  * create will set these 
- *        member variables : m_root, m_numElements, m_elements
+ *        member variables : m_root, m_numPixels, m_pixels
  *        global variables : m_width, m_height, m_depth
  ************************************************************************************/
 
@@ -87,7 +87,7 @@ bool ComponentTree::create(char * imgfile , int _minSize , int _maxSize, int _si
 	img = readtiff(imgfile, &_width,&_height, &_depth, &_channels);
 	
 	//check parameters
-	assert(_width * _height * _depth <= 2147483647); //don't use m_numElements < 2147483648   (2^31)
+        assert(_width * _height * _depth <= 2147483647); //don't use m_numPixels < 2147483648   (2^31)
 	assert(_minSize >= 0);
 	assert(_maxSize >= 0);
 	if(_maxSize < _minSize) 
@@ -122,22 +122,23 @@ bool ComponentTree::create(char * imgfile , int _minSize , int _maxSize, int _si
 	/*
 	 * 2. initial member variable
 	 */
-	m_numElements = _width * _height * _depth;
+        m_numPixels = _width * _height * _depth;
 	
-	m_elements.resize(m_numElements);
-	DisjointSets djs(m_numElements);
+        m_pixels.resize(m_numPixels);
+	for(int i = 0; i < m_numPixels; i++) m_pixels[i].level = img[i];
+        DisjointSets djs(m_numPixels);
 	vector<Node*> lowestNode;
-	lowestNode.resize(m_numElements);
-	for(int v = 0; v < m_numElements ; v++)
+        lowestNode.resize(m_numPixels);
+        for(int v = 0; v < m_numPixels ; v++)
 	{
-		//m_elements[v].vertex = v; // set vertex
-		m_elements[v].next = v;   // set pointer to itself
+		//m_pixels[v].vertex = v; // set vertex
+		m_pixels[v].next = v;   // set pointer to itself
 		lowestNode[v] = NULL;
 	}
 	/*
 	 * 3. sort img to get the visiting order
 	 */
-	vector<int> order = bucketSort(img,m_numElements);
+        vector<int> order = bucketSort(img,m_numPixels);
 	vector<int>::iterator it;
 	int   curId;
 	Node* curNode;
@@ -149,19 +150,22 @@ bool ComponentTree::create(char * imgfile , int _minSize , int _maxSize, int _si
 		curId = djs.FindSet(v);
 		curNode = lowestNode[curId];
 		/// Debug cout<<"v = "<<v<<" curId = "<<curId<<" -> ";
-		if(curNode == NULL)
+                // The following if/else will make sure curNode is not NULL
+                if(curNode == NULL) // curPoint is unvisited, create a new node
 		{
 			curNode = new Node;
-			//curNode->elementCount = 1;
-			curNode->size = 1;
+			//curNode->pixelCount = 1;
+			curNode->alpha_size = 1;
+                        curNode->beta_size = 1;
 			curNode->parent = curNode;
-			curNode->entryId = v;
-			//m_elements[v].parent = curNode;  // we should keep the entry's node
+			curNode->entry_pixel = v;
+			//m_pixels[v].parent = curNode;  // we should keep the entry's node
 			curNode->level = img[v]; 
+                        curNode->higher_level = img[v];
 			lowestNode[curId] = curNode;
 			/// Debug cout<<"create node : "<<curNode<<endl;
 		}
-		else
+                else  // curPoint is visited, we can get the node which contains it
 		{
 			/// Debug cout<<"find set : "<<curNode<<endl;
 		}
@@ -175,19 +179,24 @@ bool ComponentTree::create(char * imgfile , int _minSize , int _maxSize, int _si
 				adjId = djs.FindSet(u);        //todo: link curId and adjId and refresh lowestNode
 				adjNode = lowestNode[adjId];
 				/// Debug cout<<"\tu = "<<u<<" adjId = "<<adjId<<" -> ";
-				//if NULL, add element
+				//if NULL, add pixel
 				// just put it in the entry's link, other member doesn't change
-				if(adjNode == NULL)
+                                if(adjNode == NULL) // "adjId unsivisited" => "img[u] <= img[v]" => "img[u] == img[v]"
 				{
 					/// Debug cout<<"add vertex "<<u<<" to current set ->";
-					Element& entry = m_elements[curNode->entryId];
-					m_elements[u].next = entry.next;
+					Pixel& entry = m_pixels[curNode->entry_pixel];
+					m_pixels[u].next = entry.next;
 					entry.next = u;
-					curNode->size++;
-					//curNode->elementCount++;
+					curNode->alpha_size++;
+                                        curNode->beta_size++;
+					//curNode->pixelCount++;
 				}
-				//if different component
-				else if(curNode != adjNode)
+                                else if(curNode == adjNode)
+                                {
+                                    // nothing happened here, maybe the adj point is visited earlier
+                                }
+                                //if different component, v is a connector between currentNode and adjNode
+                                else if(curNode != adjNode)
 				{
 					/// Debug cout<<" adjNode = "<<adjNode<<" -> ";
 					//If the same level
@@ -200,38 +209,38 @@ bool ComponentTree::create(char * imgfile , int _minSize , int _maxSize, int _si
 						curNode = MergeNodes(curNode,adjNode);
 						delete adjNode;
 					}
-					else //in different level,  level(curNode) < level(adjNode)
+                                        else //in different level, adj intensity "img[u]" > "img[v]"  cur intensity
 					{
-						//Theree filter : MIN FILTER, MAX FILTER, SINGLE FILTER
-						//1. merge according to their size, merge adjNode to curNode
-						if(_minSize > 0 && adjNode->size < _minSize || _maxSize>=_minSize && adjNode->size > _maxSize)
+                                                //Three filter : MIN FILTER, MAX FILTER, SINGLE FILTER
+                                                //1. Because the beta_size of adjNode is already fixed, we can filter it
+                                                // if the size of adjNode is too small or too large, merge it to current Node
+                                                if((_minSize > 0 && adjNode->beta_size < _minSize) || (_maxSize>=_minSize && adjNode->beta_size > _maxSize))
 						{
 							/// Debug cout<<"filter by min/max, merge different level->";
-							curNode = MergeNodes(curNode,adjNode);
+                                                        curNode = MergeNodes(adjNode,curNode);
 							delete adjNode;
 						}
-						else// if(adjNode.m_area >= _minSize && adjNode.m_area <= _maxSize)
+                                                else// if(adjNode->beta_size >= _minSize && adjNode->beta_size <= _maxSize)
 						{
 							//2. filter the single node
 							/// Debug cout<<" add child ->";
 							curNode->childs.push_back(adjNode);
 							adjNode->parent = curNode;
-							curNode->size = curNode->size + adjNode->size;
+                                                        curNode->beta_size = curNode->beta_size + adjNode->beta_size;
 							if(adjNode->childs.size() == 1)
 							{
 								/// Debug cout<<" merge single child ->";
-								Node* childNode = adjNode->childs.front();
-								//adjNode->size = adjNode->size - childNode->size;
+                                                                //Node* childNode = adjNode->childs.front();
 								/*
 								 * if _singleSize = 1 means is_cut_single = false
 								 * if _singleSize > maxSize of every single node  than is_cut_single = true
 								 */
-								if(adjNode->size - childNode->size < _singleSize)
+                                                                // The alpha_size if fixed, so we can check it here
+                                                                if(adjNode->alpha_size  < _singleSize)
 								{
-									adjNode->size = adjNode->size - childNode->size;
-									adjNode->childs.clear();
-									adjNode = MergeNodes(adjNode,childNode);
-									delete childNode;
+                                                                    // add the (alpha) points of childNode to (alpha) points of curNode, instead of childNod of adjNode
+                                                                    curNode = MergeSingleNodes(adjNode,curNode);
+                                                                    delete adjNode;
 								}
 							}
 						}
@@ -278,13 +287,13 @@ bool ComponentTree::create(char * imgfile , int _minSize , int _maxSize, int _si
 
 /**************************************************************************
  * save : save these variables to file
- *        member variable: m_numElements, m_numNodes, m_elements, m_nodes
+ *        member variable: m_numPixels, m_numNodes, m_pixels, m_nodes
  *        global variable: m_width, m_height, m_depth
  **************************************************************************/
 
 bool ComponentTree::save(const char* treefile) const
 {
-	assert(m_numElements > 0);
+        assert(m_numPixels > 0);
 	assert(m_numNodes > 0);
 	cout<<"save to "<<treefile<<endl;
 	ofstream ofs(treefile, ios_base::out|ios_base::binary);
@@ -300,13 +309,13 @@ bool ComponentTree::save(const char* treefile) const
 
 bool ComponentTree::save(ofstream& ofs) const
 {
-	assert(m_numElements > 0);
+        assert(m_numPixels > 0);
 	assert(m_numNodes > 0);
-	//1. output the element num(m_numElements) and component num(m_numNodes)
-	writeValue(ofs,m_numElements);
+        //1. output the pixel num(m_numPixels) and component num(m_numNodes)
+        writeValue(ofs,m_numPixels);
 	writeValue(ofs,m_numNodes);
-	//2. save elements by their order
-	ofs.write((char*)&(m_elements[0]),m_numElements * sizeof(Element));
+	//2. save pixels by their order
+        ofs.write((char*)&(m_pixels[0]),m_numPixels * sizeof(Pixel));
 	
 	//3. save component by there label order
 	for(int j = 0; j< m_numNodes && ofs.good(); j++)
@@ -320,8 +329,8 @@ bool ComponentTree::save(ofstream& ofs) const
 		writeValue(ofs,node->centerX);
 		writeValue(ofs,node->centerY);
 		writeValue(ofs,node->centerZ);
-		writeValue(ofs,node->size);
-		writeValue(ofs,node->entryId);
+		writeValue(ofs,node->alpha_size);
+		writeValue(ofs,node->entry_pixel);
 		int child_size = node->childs.size();
 		writeValue(ofs,child_size);
 		//save childs size
@@ -346,7 +355,7 @@ bool ComponentTree::save(ofstream& ofs) const
 
 /*********************************************************************************
  * load : load the file to set many 
- *        member variable : m_numElement, m_numNodes, m_root, m_elements, m_nodes
+ *        member variable : m_numPixel, m_numNodes, m_root, m_pixels, m_nodes
  *        global variables : m_width, m_height, m_depth
  *
  * the same role as create(), but load will do one more thing, set 
@@ -368,23 +377,23 @@ bool ComponentTree::load(const char* treefile)
 
 bool ComponentTree::load(ifstream& ifs)
 {
-	//1. get m_numElements, m_numNodes;
-	readValue(ifs,m_numElements);
+        //1. get m_numPixels, m_numNodes;
+        readValue(ifs,m_numPixels);
 	readValue(ifs,m_numNodes);
-	if(false)	cout<<"numElements = "<<m_numElements<<" numNodes= "<<m_numNodes<<endl;
+        if(false)	cout<<"numPixels = "<<m_numPixels<<" numNodes= "<<m_numNodes<<endl;
 	
-	//2. build all the element
-	m_elements.resize(m_numElements);
-	ifs.read((char*)&(m_elements[0]),m_numElements * sizeof(Element));
-	//for(int i = 0; i < m_numElements; i++)
+	//2. build all the pixel
+        m_pixels.resize(m_numPixels);
+        ifs.read((char*)&(m_pixels[0]),m_numPixels * sizeof(Pixel));
+        //for(int i = 0; i < m_numPixels; i++)
 	//{
-	//	m_elements[i].next = readValue(ifs);
+	//	m_pixels[i].next = readValue(ifs);
 	//}	
 	//3. build all the components
 	m_nodes.resize(m_numNodes);
 	int childSize = -1;
 	int childLabel = -1;
-	if(false)	cout<<"label\tlevel\tsize\tentryId"<<endl;
+	if(false)	cout<<"label\tlevel\tsize\tentry_pixel"<<endl;
 	for(int j = 0; j< m_numNodes && ifs.good(); j++)
 	{
 		Node* node = new Node;
@@ -395,10 +404,10 @@ bool ComponentTree::load(ifstream& ifs)
 		readValue(ifs,node->centerX);
 		readValue(ifs,node->centerY);
 		readValue(ifs,node->centerZ);
-		readValue(ifs,node->size);
-		readValue(ifs,node->entryId);
+		readValue(ifs,node->alpha_size);
+		readValue(ifs,node->entry_pixel);
 		readValue(ifs,childSize);
-		if(false)	cout<<node->label<<"\t"<<node->level<<"\t"<<node->size<<"\t"<<node->entryId<<"\t";
+		if(false)	cout<<node->label<<"\t"<<node->level<<"\t"<<node->alpha_size<<"\t"<<node->entry_pixel<<"\t";
 		//childSize == 0 set leaf
 		if(childSize == 0)
 		{
@@ -423,7 +432,7 @@ bool ComponentTree::load(ifstream& ifs)
 		m_nodes[j]=node;
 	}
 	m_numLeafs = m_leafs.size();
-	//4. get m_root, it is the last element of m_nodes
+	//4. get m_root, it is the last pixel of m_nodes
 	m_root = m_nodes[m_numNodes -1];
 	
 	//5. get global variable
@@ -468,7 +477,7 @@ void ComponentTree::clear()
 		Node* node = m_nodes[i];
 		delete node;
 	}
-	m_elements.clear();
+	m_pixels.clear();
 	m_nodes.clear();
 	m_leafs.clear();
 	m_paths.clear();
@@ -476,7 +485,7 @@ void ComponentTree::clear()
 	m_postOrder.clear();
 	m_breadthFirst.clear();
 	m_numLeafs = 0;
-	m_numElements = 0;
+        m_numPixels = 0;
 	m_numNodes = 0;
 	m_root = NULL;
 }
@@ -539,16 +548,16 @@ void ComponentTree::setStatistic(unsigned char* img)
 		
 		Node* node = *it;
 		
-		ElementId entryId = node->entryId;
+		int entry_pixel = node->entry_pixel;
 		
-		ElementId eid = m_elements[entryId].next;
-		while(eid != entryId)
+		int eid = m_pixels[entry_pixel].next;
+		while(eid != entry_pixel)
 		{			
 			_sum_level += img[eid];
 			
 			_sum_square += img[eid] * img[eid];
 			
-			eid = m_elements[eid].next;
+			eid = m_pixels[eid].next;
 
 		}
 		_sum_level += img[eid];                         //sum of level
@@ -557,15 +566,15 @@ void ComponentTree::setStatistic(unsigned char* img)
 		vector<Node*>::iterator itr = node->childs.begin();
 		while(itr!=node->childs.end())
 		{
-			_sum_level += (*itr)->mean * (*itr)->size;
+			_sum_level += (*itr)->mean * (*itr)->alpha_size;
 
-			_sum_square += (*itr)->std * (*itr)->std * (*itr)->size + (*itr)->size * (*itr)->mean * (*itr)->mean;
+			_sum_square += (*itr)->std * (*itr)->std * (*itr)->alpha_size + (*itr)->alpha_size * (*itr)->mean * (*itr)->mean;
 
 			itr++;
 		}
 		
-		double _mean_level = _sum_level / node->size;
-		double _mean_square = _sum_square / node->size;
+		double _mean_level = _sum_level / node->alpha_size;
+		double _mean_square = _sum_square / node->alpha_size;
 				
 		node->mean = _mean_level;
 		
@@ -600,11 +609,11 @@ void ComponentTree::setCenter()
 		
 		Node* node = *it;
 		
-		ElementId entryId = node->entryId;
+		int entry_pixel = node->entry_pixel;
 		
-		ElementId eid = m_elements[entryId].next;
+		int eid = m_pixels[entry_pixel].next;
 		
-		while(eid != entryId)
+		while(eid != entry_pixel)
 		{	
 			//vertex = eid;
 			
@@ -612,7 +621,7 @@ void ComponentTree::setCenter()
 			_sum_height = (eid % (m_width*m_height))/m_width;
 			_sum_width = eid % m_width;
 			
-			eid = m_elements[eid].next;
+			eid = m_pixels[eid].next;
 		}
 		_sum_depth = eid/(m_width*m_height);
 		_sum_height = (eid % (m_width*m_height))/m_width;
@@ -621,15 +630,15 @@ void ComponentTree::setCenter()
 		vector<Node*>::iterator itr = node->childs.begin();
 		while(itr!=node->childs.end())
 		{
-			_sum_depth += (*itr)->centerZ * (*itr)->size;
-			_sum_height += (*itr)->centerY * (*itr)->size;
-			_sum_width += (*itr)->centerX * (*itr)->size;
+			_sum_depth += (*itr)->centerZ * (*itr)->alpha_size;
+			_sum_height += (*itr)->centerY * (*itr)->alpha_size;
+                        _sum_width += (*itr)->centerX * (*itr)->alpha_size;
 			itr++;
 		}
 		
-		node->centerX = _sum_width / node->size;
-		node->centerY = _sum_height / node->size;
-		node->centerZ = _sum_depth / node->size;
+                node->centerX = _sum_width / node->alpha_size;
+                node->centerY = _sum_height / node->alpha_size;
+                node->centerZ = _sum_depth / node->alpha_size;
 		it++;
 	}
 }
@@ -713,7 +722,7 @@ ComponentTree::Vertices ComponentTree::getVertices(int label) const
 	assert(label>=0);
 	Vertices _vertices;
 	Node* node = getNode(label);
-	_vertices.resize(node->size);
+	_vertices.resize(node->alpha_size);
 	int i = 0;
 	deque<Node*> queue;
 	Node* front;
@@ -722,14 +731,14 @@ ComponentTree::Vertices ComponentTree::getVertices(int label) const
 	{
 		front = queue.front();
 		queue.pop_front();
-		ElementId entryId = front->entryId;
-		ElementId eid = m_elements[entryId].next;
-		while(eid != entryId)
+		int entry_pixel = front->entry_pixel;
+		int eid = m_pixels[entry_pixel].next;
+		while(eid != entry_pixel)
 		{
 			_vertices[i++] = eid;
-			eid = m_elements[eid].next;
+			eid = m_pixels[eid].next;
 		}
-		_vertices[i++] = entryId;
+		_vertices[i++] = entry_pixel;
 		
 		Nodes::iterator it = front->childs.begin();
 		while(it!= front->childs.end())
@@ -747,9 +756,9 @@ int ComponentTree::nodeCount() const
 	return m_numNodes;
 }
 
-int ComponentTree::elementCount() const
+int ComponentTree::pixelCount() const
 {
-	return m_numElements;
+        return m_numPixels;
 }
 
 int ComponentTree::leafCount() const
@@ -764,20 +773,20 @@ void ComponentTree::printTreeRecursively(int label, int spaceCount) const
 {
 	assert(label >=0);
 	Node* node = m_nodes[label];
-	int _selfSize = node->size;
+	int _selfSize = node->alpha_size;
 	cout.precision(3);
 	for(Nodes::iterator it = node->childs.begin(); it != node->childs.end(); it++)
 	{
-		_selfSize -= (*it)->size;
+		_selfSize -= (*it)->alpha_size;
 	}
 	if(node->childs.empty())
 	{
-		cout<<label<<" : "<<node->level<<"("<<(node->mean - node->level)<<","<<node->std<<") "<<node->size<<" "<<_selfSize<<"  leaf"<<endl;
+		cout<<label<<" : "<<node->level<<"("<<(node->mean - node->level)<<","<<node->std<<") "<<node->alpha_size<<" "<<_selfSize<<"  leaf"<<endl;
 		return;
 	}
 	else
 	{
-		cout<<label<<" : "<<node->level<<"("<<(node->mean - node->level)<<","<<node->std<<") "<<node->size<<" "<<_selfSize<<endl;
+		cout<<label<<" : "<<node->level<<"("<<(node->mean - node->level)<<","<<node->std<<") "<<node->alpha_size<<" "<<_selfSize<<endl;
 	}
 	
 	for(Nodes::iterator it = node->childs.begin(); it != node->childs.end(); it++)
@@ -807,7 +816,7 @@ void ComponentTree::printTree(int label) const
 	if(label == -1) label = m_root->label;
 	assert(label>=0);
 	cout<<"---------------Component Tree-------------------------"<<endl;
-	cout<<"label : level totalsize elementSize"<<endl;
+	cout<<"label : level totalsize pixelSize"<<endl;
 	printTreeRecursively(label,0);
 	cout<<endl;
 	cout<<"width = "<<m_width<<"\theight = "<<m_height<<"\tdepth = "<<m_depth<<endl;
@@ -849,8 +858,8 @@ void ComponentTree::printTree(int label) const
  ****************************************************************************/
 int* ComponentTree::getMappingMatrix() const
 {
-	int* matrix = new int[m_numElements];
-	memset(matrix,0,m_numElements);
+        int* matrix = new int[m_numPixels];
+        memset(matrix,0,m_numPixels);
 	int label = -1;
 	deque<Node*> queue;
 	Node* front;
@@ -860,12 +869,12 @@ int* ComponentTree::getMappingMatrix() const
 		front = queue.front();
 		queue.pop_front();
 		label = front->label;
-		ElementId entryId = front->entryId;
-		ElementId eid = m_elements[entryId].next;
-		while(eid != entryId)
+		int entry_pixel = front->entry_pixel;
+		int eid = m_pixels[entry_pixel].next;
+		while(eid != entry_pixel)
 		{
 			matrix[eid] = label;
-			eid = m_elements[eid].next;
+			eid = m_pixels[eid].next;
 		}
 		matrix[eid] = label;	
 		
@@ -884,13 +893,13 @@ int* ComponentTree::getMappingMatrix() const
  * getMatrix : get the vertices with label in labels
  * intput : labels ,  values, initial value
  * output : a int* matrix, the vertice will be assign with 
- *          the element of values
+ *          the pixel of values
  ********************************************************************/
 int* ComponentTree::getMatrix(vector<int> labels, vector<int> values ,int ini) const
 {
-	int* matrix = new int[m_numElements];
-	//memset(matrix,0,m_numElements);
-	for(int i = 0; i< m_numElements ;i++)
+        int* matrix = new int[m_numPixels];
+        //memset(matrix,0,m_numPixels);
+        for(int i = 0; i< m_numPixels ;i++)
 	{
 		matrix[i] = ini;
 	}
@@ -908,12 +917,12 @@ int* ComponentTree::getMatrix(vector<int> labels, vector<int> values ,int ini) c
 			front = queue.front();
 			queue.pop_front();
 			//label = front->label;
-			ElementId entryId = front->entryId;
-			ElementId eid = m_elements[entryId].next;
-			while(eid != entryId)
+			int entry_pixel = front->entry_pixel;
+			int eid = m_pixels[entry_pixel].next;
+			while(eid != entry_pixel)
 			{
 				matrix[eid] = value;
-				eid = m_elements[eid].next;
+				eid = m_pixels[eid].next;
 			}
 			matrix[eid] = value;	
 			
@@ -945,7 +954,7 @@ void ComponentTree::printMapping() const
 		sprintf(format,"%s%d%dd ","%",0,w);
 	}
 
-	while(i < m_numElements)
+        while(i < m_numPixels)
 	{
 		char out[10];
 		sprintf(out,format,matrix[i]);
@@ -1027,7 +1036,7 @@ void ComponentTree::printPath(int pathId) const
 /*****************************************************
  * postProcess : setLabels function will do two things
  * 1. set the label of each node
- * 2. store the node index to m_nodes by their label
+ * 2. store the node index to m_nodes by their label in post_order
  * 3. set m_leafs
  *
  * that is to say we can get these member variables : 
@@ -1065,30 +1074,57 @@ int ComponentTree::postProcess(Node* node, int label)
 
 /*****************************************************************************
  * MergesNode : merge two component node
- * 1. merge entry to curNode
+ * 1. merge entry to toNode
  * 2. merge size
  *****************************************************************************/
 
-ComponentTree::Node* ComponentTree::MergeNodes(Node* curNode, Node* adjNode)
+ComponentTree::Node* ComponentTree::MergeNodes(Node* fromNode, Node* toNode)
 {
-	Node* root = (curNode->level <= adjNode->level)?curNode:adjNode;
-	Node* child = (curNode->level > adjNode->level)?curNode:adjNode;
-	
-	ElementId temp = m_elements[root->entryId].next;
-	m_elements[root->entryId].next = m_elements[child->entryId].next;
-	m_elements[child->entryId].next = temp;
-	root->size = root->size + child->size;
-	//root->elementCount = root->elementCount + child->elementCount;
-	Nodes::iterator it = child->childs.begin();
-	while(it != child->childs.end())
+        //Node* root = (fromNode->level <= toNode->level)?fromNode:toNode;
+        //Node* child = (fromNode->level > toNode->level)?fromNode:toNode;
+        assert(fromNode->level >= toNode->level);
+	 
+        int temp = m_pixels[toNode->entry_pixel].next;
+        m_pixels[toNode->entry_pixel].next = m_pixels[fromNode->entry_pixel].next;
+        m_pixels[fromNode->entry_pixel].next = temp;
+        toNode->alpha_size = toNode->alpha_size + fromNode->alpha_size;
+        toNode->beta_size = toNode->beta_size + fromNode->beta_size;
+        toNode->higher_level = fromNode->level;
+        Nodes::iterator it = fromNode->childs.begin();
+        while(it != fromNode->childs.end())
 	{
-		root->childs.push_back(*it);
-		(*it)->parent = root;
+                toNode->childs.push_back(*it);
+                (*it)->parent = toNode;
 		it++;
 	}
-	return root;
+        return toNode;
 }
 
+/*****************************************************************************
+ * MergeSingleNodes : merge two component node
+ * 1. merge entry to fromNode
+ * 2. merge size
+ *****************************************************************************/
+
+ComponentTree::Node* ComponentTree::MergeSingleNodes(Node* fromNode, Node* toNode)
+{
+    assert(fromNode->parent == toNode);
+    assert(fromNode->childs.size() == 1);
+    assert(fromNode->level > toNode->level);
+    int temp = m_pixels[toNode->entry_pixel].next;
+    m_pixels[toNode->entry_pixel].next = m_pixels[fromNode->entry_pixel].next;
+    m_pixels[fromNode->entry_pixel].next = temp;
+    toNode->alpha_size = toNode->alpha_size + fromNode->alpha_size;
+    toNode->higher_level = fromNode->level;
+    Nodes::iterator it = fromNode->childs.begin();
+    while(it != fromNode->childs.end())
+    {
+            toNode->childs.push_back(*it);
+            (*it)->parent = toNode;
+            it++;
+    }
+    return toNode;
+}
 // iterator
 
 ComponentTree::iterator::iterator()
@@ -1237,58 +1273,58 @@ ComponentTree::const_iterator ComponentTree::end(ComponentTree::SEARCH_TYPE type
 
 DisjointSets::DisjointSets()
 {
-	m_numElements = 0;
+        m_numPixels = 0;
 	m_numSets = 0;
 }
 
 DisjointSets::DisjointSets(int count)
 {
-	m_numElements = 0;
+        m_numPixels = 0;
 	m_numSets = 0;
-	AddElements(count);
+	AddPixels(count);
 }
 
 DisjointSets::DisjointSets(const DisjointSets & s)
 {
-	this->m_numElements = s.m_numElements;
+        this->m_numPixels = s.m_numPixels;
 	this->m_numSets = s.m_numSets;
 	
 	// Copy nodes
-	m_nodes.resize(m_numElements);
-	for(int i = 0; i < m_numElements; ++i)
+        m_nodes.resize(m_numPixels);
+        for(int i = 0; i < m_numPixels; ++i)
 		m_nodes[i] = new Node(*s.m_nodes[i]);
 	
 	// Update parent pointers to point to newly created nodes rather than the old ones
-	for(int i = 0; i < m_numElements; ++i)
+        for(int i = 0; i < m_numPixels; ++i)
 		if(m_nodes[i]->parent != NULL)
 			m_nodes[i]->parent = m_nodes[s.m_nodes[i]->parent->index];
 }
 
 DisjointSets::~DisjointSets()
 {
-	for(int i = 0; i < m_numElements; ++i)
+        for(int i = 0; i < m_numPixels; ++i)
 		delete m_nodes[i];
 	m_nodes.clear();
-	m_numElements = 0;
+        m_numPixels = 0;
 	m_numSets = 0;
 }
 
 // Note: some internal data is modified for optimization even though this method is consant.
-int DisjointSets::FindSet(int elementId) const
+int DisjointSets::FindSet(int pixelId) const
 {
-	assert(elementId < m_numElements);
+        assert(pixelId < m_numPixels);
 	
 	Node* curNode;
 	
-	// Find the root element that represents the set which `elementId` belongs to
-	curNode = m_nodes[elementId];
+	// Find the root pixel that represents the set which `pixelId` belongs to
+	curNode = m_nodes[pixelId];
 	while(curNode->parent != NULL)
 		curNode = curNode->parent;
 	Node* root = curNode;
 	
-	// Walk to the root, updating the parents of `elementId`. Make those elements the direct
+	// Walk to the root, updating the parents of `pixelId`. Make those pixels the direct
 	// children of `root`. This optimizes the tree for future FindSet invokations.
-	curNode = m_nodes[elementId];
+	curNode = m_nodes[pixelId];
 	while(curNode != root)
 	{
 		Node* next = curNode->parent;
@@ -1301,8 +1337,8 @@ int DisjointSets::FindSet(int elementId) const
 
 int DisjointSets::Union(int setId1, int setId2)
 {
-	assert(setId1 < m_numElements);
-	assert(setId2 < m_numElements);
+        assert(setId1 < m_numPixels);
+        assert(setId2 < m_numPixels);
 	
 	if(setId1 == setId2)
 		return FindSet(setId1); // already unioned
@@ -1333,13 +1369,13 @@ int DisjointSets::Union(int setId1, int setId2)
 	return FindSet(setId1);
 }
 
-void DisjointSets::AddElements(int numToAdd)
+void DisjointSets::AddPixels(int numToAdd)
 {
 	assert(numToAdd >= 0);
 	
-	// insert and initialize the specified number of element nodes to the end of the `m_nodes` array
+	// insert and initialize the specified number of pixel nodes to the end of the `m_nodes` array
 	m_nodes.insert(m_nodes.end(), numToAdd, (Node*)NULL);
-	for(int i = m_numElements; i < m_numElements + numToAdd; ++i)
+        for(int i = m_numPixels; i < m_numPixels + numToAdd; ++i)
 	{
 		m_nodes[i] = new Node();
 		m_nodes[i]->parent = NULL;
@@ -1347,14 +1383,14 @@ void DisjointSets::AddElements(int numToAdd)
 		m_nodes[i]->rank = 0;
 	}
 	
-	// update element and set counts
-	m_numElements += numToAdd;
+	// update pixel and set counts
+        m_numPixels += numToAdd;
 	m_numSets += numToAdd;
 }
 
-int DisjointSets::NumElements() const
+int DisjointSets::NumPixels() const
 {
-	return m_numElements;
+        return m_numPixels;
 }
 
 int DisjointSets::NumSets() const
