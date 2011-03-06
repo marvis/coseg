@@ -17,37 +17,54 @@ using namespace std;
 class ComponentTree
 {
 public:	
-	struct Pixel;
-	struct Node;
+	class Pixel;
+	class Node;
+
 	typedef int Vertex;
 	typedef vector<Vertex> Vertices;
 	typedef vector<int> Path;
 	typedef vector<Path> Paths;
 	
-	enum SEARCH_TYPE{PRE_ORDER, POST_ORDER, BREADTH_FIRST};
-	
-	struct Pixel
+	class Pixel
 	{
-		int  next;		 // the next pixel
+	    public:
+		Pixel();
+		void merge_entry(Pixel* entry);
+	    public:
+		int  pos;
+		Pixel * next;		 // the next pixel
 		unsigned short level;
+		Node* node;
 	};
 	typedef vector<Node*> Nodes;
 	
-	struct Node
+	class Node
 	{
-		int label;        // the store index in m_nodes, start from 0
-                int higher_level;   // the higher level
-		int level;        // the lowest level
-		double mean;
-		double std;
+	    public:
+		Node(){};
+		vector<Pixel*> alpha_pixels();
+		vector<Pixel*> beta_pixels();
+		vector<int> alpha_points();
+		vector<int> beta_points();
+		void merge_node(Node* node);  // node may be a child
+	 	Nodes getPostOrderNodes(); //return all the node which stores in post order, equilivalent to m_root
+		Nodes getPreOrderNodes(); //return all the node which stores in post order, equilivalent to m_root
+		Nodes getBreadthFirstNodes(); //return all the node which stores in post order, equilivalent to m_root
+
+	    public:
+		int label;          // the store index in m_nodes, start from 0
+                int highest_beta_level;    // the highest beta level
+                int highest_alpha_level;   // the highest alpha level
+		int lowest_level;          // the lowest level
+		double mean_level;
 		double centerX;
 		double centerY;
 		double centerZ;
 
-		int alpha_size; // the pixel in the component exclude the pixels in child nodes
-		int beta_size; // the total number of pixels 
-		Node* parent; // we will make Node as dynamic memory, for the label is not easy to 
-		int entry_pixel; //pixel will set static, the entry shoud set as the one of the lowest pixel in this component 
+		int alpha_size;  // the pixel in the component exclude the pixels in child nodes
+		int beta_size;   // the total number of pixels 
+		Node* parent;    // we will make Node as dynamic memory, for the label is not easy to 
+		Pixel* entry_pixel; // pixel will set static, the entry shoud set as the one of the lowest pixel in this component 
 		vector<Node*> childs;
 	};
 	
@@ -70,32 +87,25 @@ public:
 	int depth() const;
 	Node* root() const;
 	Node* getNode(int) const;  //node of label 
-	Nodes getNodes() const; //return all the node which stores in post order, equilivalent to m_root
+	
 	Paths getPaths() const;
-	Vertices getVertices(int) const; //vertices of label
-	int* getMappingMatrix() const; //get the matrix of labels
+
+	int* getReverseAlphaMapping() const; //get the matrix of labels
 	int* getMatrix(vector<int> labels , vector<int> values, int ini_value) const; 
 	
-	int nodeCount() const;
-	int leafCount() const;
-	int pixelCount() const;
+	int nodeNum() const;
+	int leafNum() const;
+	int pixelNum() const;
 	
-	void printVertices(int label = -1) const;
 	void printTree(int label = -1) const;
-	void printMapping() const;
+	void printReverseAlphaMapping() const;
 	void printPaths() const;
-	void printPath(int path) const;
 	
 private:
 	void printTreeRecursively(int , int) const;
 	int postProcess(Node* node, int label); //1. set node labels 2. set mean level  3. store node by post order 4. get leafs
 	void setStatistic(unsigned char*);  //set the points mean level and the stand devariance
 	void setCenter();
-	void setPaths();
-	void setOrders();
-        Node* MergeNodes(Node* fromNode, Node* toNode);
-        Node* MergeSingleNodes(Node* fromNode, Node* toNode);
-
 	
 	//8 memervariable, 4 containers, 3 counters, 1 root
 public:
@@ -111,53 +121,15 @@ private:
 	int m_numNodes;
 	int m_numLeafs;
 	
-	//4 contaners
-	Paths m_paths;
-	Nodes m_leafs; //store all the leafs
         vector<Pixel> m_pixels;
 	Nodes m_nodes; //store the nodes in post order
-	vector<Node*> m_postOrder;
-	vector<Node*> m_preOrder;
-	vector<Node*> m_breadthFirst;
-	
+	Nodes m_leafs; //store all the leafs
+
 	//3 setting
 	int m_minSize;
 	int m_maxSize;
 	int m_singleSize;
-	
-	
-	//3 iterators
-public:
-	
-	class iterator
-	{
-	public:
-		iterator();
-		void operator=(iterator&);
-		Node* operator*() const;
-		iterator operator++(int);  //  match i++ not ++i
-		bool operator!=(iterator&);
-	public:
-		vector<Node*>::iterator node_itr;
-	};
-	
-	class const_iterator
-        {
-	public:
-		const_iterator();
-                void operator=(const_iterator);
-		const Node* operator*() const;
-		const_iterator operator++(int);   //
-		bool operator!=(const_iterator);  // becareful the const_iterator should not be referenced type
-	public:
-		vector<Node*>::const_iterator node_itr;
-	};
-	
-	
-	iterator begin(SEARCH_TYPE = BREADTH_FIRST);
-	const_iterator begin(SEARCH_TYPE = BREADTH_FIRST) const;
-	iterator end(SEARCH_TYPE = BREADTH_FIRST);
-	const_iterator end(SEARCH_TYPE = BREADTH_FIRST) const;
+
 };
 
 class DisjointSets
