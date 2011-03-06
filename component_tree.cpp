@@ -513,11 +513,8 @@ bool ComponentTree::save(ofstream& ofs) const
 		Node* node = m_nodes[j];
 		writeValue(ofs,node->label);
 		writeValue(ofs,node->lowest_level);
-		writeValue(ofs,node->mean_level);
+		//writeValue(ofs,node->mean_level);
 		//writeValue(ofs,node->std);
-		writeValue(ofs,node->centerX);
-		writeValue(ofs,node->centerY);
-		writeValue(ofs,node->centerZ);
 		writeValue(ofs,node->alpha_size);
 		//writeValue(ofs,node->entry_pixel->pos);
 		int child_size = node->childs.size();
@@ -588,11 +585,8 @@ bool ComponentTree::load(ifstream& ifs)
 		Node* node = new Node;
 		readValue(ifs,node->label);
 		readValue(ifs,node->lowest_level);
-		readValue(ifs,node->mean_level);
+		//readValue(ifs,node->mean_level);
 		//readValue(ifs,node->std);
-		readValue(ifs,node->centerX);
-		readValue(ifs,node->centerY);
-		readValue(ifs,node->centerZ);
 		readValue(ifs,node->alpha_size);
 		//readValue(ifs,node->entry_pixel->pos);
 		readValue(ifs,childSize);
@@ -729,16 +723,16 @@ ComponentTree::Paths ComponentTree::getPaths() const
  * This work should be down after the post store of each node
  *****************************************/
 
-void ComponentTree::setStatistic(unsigned char* img)
-{
-}
+//void ComponentTree::setStatistic(unsigned char* img)
+//{
+//}
 
 /********************************************
  * setCenter : set the center of each node
  ********************************************/
-void ComponentTree::setCenter()
-{
-}
+//void ComponentTree::setCenter()
+//{
+//}
 
 int ComponentTree::nodeNum() const
 {
@@ -770,12 +764,12 @@ void ComponentTree::printTreeRecursively(int label, int spaceCount) const
 	}
 	if(node->childs.empty())
 	{
-		cout<<label<<" : "<<node->lowest_level<<"("<<(node->mean_level - node->lowest_level)<<","<<node->alpha_size<<" "<<_selfSize<<"  leaf"<<endl;
+		cout<<label<<" : "<<node->lowest_level<<" "<<node->alpha_size<<" "<<_selfSize<<"  leaf"<<endl;
 		return;
 	}
 	else
 	{
-		cout<<label<<" : "<<node->lowest_level<<"("<<(node->mean_level - node->lowest_level)<<","<<") "<<node->alpha_size<<" "<<_selfSize<<endl;
+		cout<<label<<" : "<<node->lowest_level<<" "<<node->alpha_size<<" "<<_selfSize<<endl;
 	}
 	
 	for(Nodes::iterator it = node->childs.begin(); it != node->childs.end(); it++)

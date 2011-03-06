@@ -56,10 +56,8 @@ public:
                 int highest_beta_level;    // the highest beta level
                 int highest_alpha_level;   // the highest alpha level
 		int lowest_level;          // the lowest level
-		double mean_level;
-		double centerX;
-		double centerY;
-		double centerZ;
+		double mean_level();
+		vector<double> center();
 
 		int alpha_size;  // the pixel in the component exclude the pixels in child nodes
 		int beta_size;   // the total number of pixels 
@@ -103,20 +101,18 @@ public:
 	
 private:
 	void printTreeRecursively(int , int) const;
-	int postProcess(Node* node, int label); //1. set node labels 2. set mean level  3. store node by post order 4. get leafs
-	void setStatistic(unsigned char*);  //set the points mean level and the stand devariance
-	void setCenter();
 	
-	//8 memervariable, 4 containers, 3 counters, 1 root
 public:
-	//1 root
 	Node* m_root;  //the root Node
 private:
-	//size
 	int m_width ;
 	int m_height;
 	int m_depth;	
-	//3 counters
+
+	int m_minSize;
+	int m_maxSize;
+	int m_singleSize;
+
         int m_numPixels;
 	int m_numNodes;
 	int m_numLeafs;
@@ -124,12 +120,6 @@ private:
         vector<Pixel> m_pixels;
 	Nodes m_nodes; //store the nodes in post order
 	Nodes m_leafs; //store all the leafs
-
-	//3 setting
-	int m_minSize;
-	int m_maxSize;
-	int m_singleSize;
-
 };
 
 class DisjointSets
