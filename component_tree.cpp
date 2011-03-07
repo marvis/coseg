@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
 #include <assert.h>
 #include <map>
 #include <deque>
@@ -21,12 +22,63 @@
 
 using namespace std;
 
+bool component_tree_verbose = false;
 
 /******************************************************************
  * ComponentTree::Pixel
  *****************************************************************/
 ComponentTree::Pixel::Pixel()
 {
+}
+
+bool ComponentTree::Pixel::save(ofstream& ofs, bool saveType) const
+{
+	if(saveType == 0) // binary format
+	{
+		writeValue(ofs, pos);
+		writeValue(ofs, next->pos);
+		writeValue(ofs, level);
+		writeValue(ofs, node->label);
+	}
+	else // txt format
+	{
+		ofs<<pos<<" ";
+		ofs<<next->pos<<" ";
+		ofs<<level<<" ";
+		ofs<<node->label<<" ";
+		ofs<<endl;
+	}
+	if(ofs.good()) return true;
+	else return false;
+}
+
+bool ComponentTree::Pixel::load(ifstream& ifs, vector<Pixel>& pixels,vector<Node*>& nodes, bool saveType)
+{
+	if(saveType == 0) // binary format
+	{
+		readValue(ifs, pos);
+		int next_pos;
+		readValue(ifs, next_pos); 
+		next=&pixels[next_pos];
+		readValue(ifs, level);
+		int node_label;
+		readValue(ifs, node_label);
+		node = nodes[node_label];
+
+	}
+	else // txt format
+	{
+		ifs>>pos;
+		int next_pos;
+		ifs>>next_pos;
+		next=&pixels[next_pos];
+		ifs>>level;
+		int node_label;
+		ifs>>node_label;
+		node = nodes[node_label];
+	}
+	if(ifs.good()) return true;
+	else return false;
 }
 
 void ComponentTree::Pixel::merge_entry(ComponentTree::Pixel *entry)
@@ -39,6 +91,118 @@ void ComponentTree::Pixel::merge_entry(ComponentTree::Pixel *entry)
 /******************************************************************
  * ComponentTree::Node
  ****************************************************************/
+
+bool ComponentTree::Node::save(ofstream& ofs, bool saveType) const
+{
+	if(saveType == 0) // binary format
+	{
+		writeValue(ofs, label);
+		writeValue(ofs, lowest_level);
+		writeValue(ofs, highest_alpha_level);
+		writeValue(ofs, alpha_size);
+		writeValue(ofs, beta_size);
+		writeValue(ofs, parent->label);
+		writeValue(ofs, entry_pixel->pos);
+		if(childs.empty())
+		{
+			int child_size = 0;
+			writeValue(ofs,child_size);
+		}
+		else
+		{
+			int child_size = childs.size();
+			writeValue(ofs, child_size);
+			vector<Node*>::const_iterator it = childs.begin();
+			while(it != childs.end())
+			{
+				writeValue(ofs, (*it)->label);
+				it++;
+			}
+		}
+	}
+	else       // txt format
+	{
+		ofs<<label<<" ";
+		ofs<<lowest_level<<" ";
+		ofs<<highest_alpha_level<<" ";
+		ofs<<alpha_size<<" ";
+		ofs<<beta_size<<" ";
+		ofs<<parent->label<<" "; // not necessary when load
+		ofs<<entry_pixel->pos<<" ";
+		if(childs.empty())
+		{
+			ofs<<(int)0<<" ";
+		}
+		else
+		{
+			ofs<<childs.size()<<" ";
+			vector<Node*>::const_iterator it = childs.begin();
+			while(it != childs.end())
+			{
+				ofs<<(*it)->label<<" ";
+				it++;
+			}
+		}
+		ofs<<endl;
+	}
+	if(ofs.good()) return true;
+	else return false;
+}
+
+bool ComponentTree::Node::load(ifstream& ifs, vector<ComponentTree::Pixel>& pixels, vector<ComponentTree::Node*>& nodes, bool saveType)
+{
+	if(saveType == 0) // binary format
+	{
+		readValue(ifs, label);
+		readValue(ifs, lowest_level);
+		readValue(ifs, highest_alpha_level);
+		readValue(ifs, alpha_size);
+		readValue(ifs, beta_size);
+		int par_label;
+		readValue(ifs, par_label);
+		assert(par_label >= label);
+		parent = nodes[par_label];
+		int pixel_pos;
+		readValue(ifs, pixel_pos);
+		entry_pixel = &pixels[pixel_pos];
+		int child_size;
+		readValue(ifs, child_size);
+		for(int i = 0; i < child_size; i++)
+		{
+			int child_label;
+			readValue(ifs, child_label);
+			assert(child_label < label);
+			childs.push_back(nodes[child_label]);
+
+		}
+	}
+	else // read from txt files
+	{
+		ifs>>label;
+		ifs>>lowest_level;
+		ifs>>highest_alpha_level;
+		ifs>>alpha_size;
+		ifs>>beta_size;
+		int par_label;
+		ifs>>par_label;
+		assert(par_label >= label);
+		parent = nodes[par_label];
+		int pixel_pos;
+		ifs>>pixel_pos;
+		entry_pixel = &pixels[pixel_pos];
+		int child_size;
+		ifs>>child_size;
+		for(int i=0; i < child_size; i++)
+		{
+			int child_label;
+			ifs>>child_label;
+			assert(child_label < label);
+			childs.push_back(nodes[child_label]);
+		}
+	}
+	if(ifs.good()) return true;
+	else return false;
+}
 
 vector<ComponentTree::Pixel*> ComponentTree::Node::alpha_pixels()
 {
@@ -484,59 +648,115 @@ bool ComponentTree::save(const char* treefile) const
 {
         assert(m_numPixels > 0);
 	assert(m_numNodes > 0);
-	cout<<"save to "<<treefile<<endl;
-	ofstream ofs(treefile, ios_base::out|ios_base::binary);
+	ofstream ofs;
+	bool saveType = true;
+	string str_file(treefile);
+	if(str_file.find("bin") != string::npos)
+	{
+		cout<<"save to binary file : "<<treefile<<endl;
+		saveType = false;
+		ofs.open(treefile, ios_base::out|ios_base::binary);
+	}
+	else if(str_file.find("txt") != string::npos)
+	{
+		cout<<"save to txt file : "<<treefile<<endl;
+		saveType = true;
+		ofs.open(treefile);
+	}
+	else 
+	{
+		cerr<<"Load Tree File: Cann't analysis file type."<<endl;
+		cerr<<"Make sure .bin.tree file as binary and .txt.tree file as txt file"<<endl;
+		return false;
+	}
 	if(ofs.fail()) 
 	{
 		ofs.close();
 		return false;
 	}
-	bool rt = save(ofs);
+	bool rt = save(ofs, saveType);
 	ofs.close();
+	
 	return rt;
 }
 
-bool ComponentTree::save(ofstream& ofs) const
+bool ComponentTree::save(ofstream& ofs, bool saveType) const
 {
-        assert(m_numPixels > 0);
+	cout<<"save type = "<<saveType<<endl;
+	assert(m_numPixels > 0);
 	assert(m_numNodes > 0);
-        //1. output the pixel num(m_numPixels) and component num(m_numNodes)
-        writeValue(ofs,m_numPixels);
-	writeValue(ofs,m_numNodes);
-	//2. save pixels by their order
-        ofs.write((char*)&(m_pixels[0]),m_numPixels * sizeof(Pixel));
-	
-	//3. save component by there label order
-	for(int j = 0; j< m_numNodes && ofs.good(); j++)
+	if(saveType == 0) // binary format save
 	{
-		if(ofs.fail()) return false;
-		Node* node = m_nodes[j];
-		writeValue(ofs,node->label);
-		writeValue(ofs,node->lowest_level);
-		//writeValue(ofs,node->mean_level);
-		//writeValue(ofs,node->std);
-		writeValue(ofs,node->alpha_size);
-		//writeValue(ofs,node->entry_pixel->pos);
-		int child_size = node->childs.size();
-		writeValue(ofs,child_size);
-		//save childs size
-		Nodes::iterator it = node->childs.begin();
-		while(it != node->childs.end())
+		writeValue(ofs, m_width);
+		writeValue(ofs, m_height);
+		writeValue(ofs, m_depth);
+
+		writeValue(ofs, m_minSize);
+		writeValue(ofs, m_maxSize);
+		writeValue(ofs, m_singleSize);
+
+		writeValue(ofs, m_numPixels);
+		writeValue(ofs, m_numNodes);
+		writeValue(ofs, m_numLeafs);
+
+		vector<Pixel>::const_iterator it = m_pixels.begin();
+		while(it != m_pixels.end())
 		{
-			writeValue(ofs,(*it)->label);
+			(*it).save(ofs, saveType);
 			it++;
 		}
+		vector<Node*>::const_iterator itr = m_nodes.begin();
+		while(itr != m_nodes.end())
+		{
+			(*itr)->save(ofs,saveType);
+			itr++;
+		}
+		itr = m_leafs.begin();
+		while(itr != m_leafs.end())
+		{
+			writeValue(ofs, (*itr)->label);
+			itr++;
+		}
+		writeValue(ofs, m_root->label);
+
 	}
-	
-	//4. save global variable
-	writeValue(ofs,m_width);
-	writeValue(ofs,m_height);
-	writeValue(ofs,m_depth);
-	writeValue(ofs,m_minSize);
-	writeValue(ofs,m_maxSize);
-	writeValue(ofs,m_singleSize);
-	//ofs.close();
-	return true;
+	else  //txt format
+	{
+		ofs<<m_width<<" ";
+		ofs<<m_height<<" ";
+		ofs<<m_depth<<" ";
+		ofs<<endl;
+		ofs<<m_minSize<<" ";
+		ofs<<m_maxSize<<" ";
+		ofs<<m_singleSize<<" ";
+		ofs<<endl;
+		ofs<<m_numPixels<<" ";
+		ofs<<m_numNodes<<" ";
+		ofs<<m_numLeafs<<" ";
+		ofs<<endl;
+		vector<Pixel>::const_iterator it = m_pixels.begin();
+		while(it != m_pixels.end())
+		{
+			(*it).save(ofs, saveType);
+			it++;
+		}
+		vector<Node*>::const_iterator itr = m_nodes.begin();
+		while(itr != m_nodes.end())
+		{
+			(*itr)->save(ofs,saveType);
+			itr++;
+		}
+		itr = m_leafs.begin();
+		while(itr != m_leafs.end())
+		{
+			ofs<<(*itr)->label<<" ";
+			itr++;
+		}
+		ofs<<endl;
+		ofs<<m_root->label<<endl;
+	}
+	if(ofs.good()) return true;
+	else return false;
 }
 
 /*********************************************************************************
@@ -550,106 +770,120 @@ bool ComponentTree::save(ofstream& ofs) const
 
 bool ComponentTree::load(const char* treefile)
 {
-	ifstream ifs(treefile, ios_base::in|ios_base::binary);
+	ifstream ifs;
+	bool saveType = true;
+	string str_file(treefile);
+	if(str_file.find("bin") != string::npos)
+	{
+		cout<<"load binary file: "<<treefile<<endl;
+		saveType = false;
+		ifs.open(treefile, ios_base::in|ios_base::binary);
+	}
+	else if(str_file.find("txt") != string::npos)
+	{
+		cout<<"load txt file: "<<treefile<<endl;
+		saveType = true;
+		ifs.open(treefile);
+	}
+	else 
+	{
+		cerr<<"Load Tree File: Cann't analysis file type."<<endl;
+		cerr<<"Make sure .bin.tree file as binary and .txt.tree file as txt file"<<endl;
+		return false;
+	}
 	if(ifs.fail())
 	{
 		ifs.close();
 		return false;
 	}
-	bool rt = load(ifs);
+	bool rt = load(ifs, saveType);
 	ifs.close();
 	return rt;
 }
 
-bool ComponentTree::load(ifstream& ifs)
+bool ComponentTree::load(ifstream& ifs, bool saveType)
 {
-        //1. get m_numPixels, m_numNodes;
-        readValue(ifs,m_numPixels);
-	readValue(ifs,m_numNodes);
-        if(false)	cout<<"numPixels = "<<m_numPixels<<" numNodes= "<<m_numNodes<<endl;
-	
-	//2. build all the pixel
-        m_pixels.resize(m_numPixels);
-        ifs.read((char*)&(m_pixels[0]),m_numPixels * sizeof(Pixel));
-        //for(int i = 0; i < m_numPixels; i++)
-	//{
-	//	m_pixels[i].next = readValue(ifs);
-	//}	
-	//3. build all the components
-	m_nodes.resize(m_numNodes);
-	int childSize = -1;
-	int childLabel = -1;
-	if(false)	cout<<"label\tlowest_level\tsize\tentry_pixel"<<endl;
-	for(int j = 0; j< m_numNodes && ifs.good(); j++)
+	if(saveType == 0)
 	{
-		Node* node = new Node;
-		readValue(ifs,node->label);
-		readValue(ifs,node->lowest_level);
-		//readValue(ifs,node->mean_level);
-		//readValue(ifs,node->std);
-		readValue(ifs,node->alpha_size);
-		//readValue(ifs,node->entry_pixel->pos);
-		readValue(ifs,childSize);
-		if(false)	cout<<node->label<<"\t"<<node->lowest_level<<"\t"<<node->alpha_size<<"\t"<<node->entry_pixel<<"\t";
-		//childSize == 0 set leaf
-		if(childSize == 0)
+		readValue(ifs, m_width);
+		readValue(ifs, m_height);
+		readValue(ifs, m_depth);
+		readValue(ifs, m_minSize);
+		readValue(ifs, m_maxSize);
+		readValue(ifs, m_singleSize);
+		readValue(ifs, m_numPixels);
+		readValue(ifs, m_numNodes);
+		readValue(ifs, m_numLeafs);
+
+		m_pixels.resize(m_numPixels);
+		m_nodes.resize(m_numNodes);
+
+		for(int i = 0; i < m_numNodes; i++) m_nodes[i] = new Node;
+
+		m_leafs.resize(m_numLeafs);
+
+
+		for(int i = 0; i < m_numPixels; i++)
 		{
-			if(false)	cout<<" leaf ";
-			m_leafs.push_back(node);
+			m_pixels[i].load(ifs, m_pixels,m_nodes,saveType);
 		}
-		//childSize > 0
-		else
+
+		for(int i = 0; i < m_numNodes; i++)
 		{
-			if(false)	cout<<childSize<<" childs: ";
-			assert(childSize > 0);
-			node->childs.resize(childSize);
-			for(int i = 0; i < childSize && ifs.good(); i++)
-			{
-				//ifs.read((char*)&childLabel,sizeof(int));
-				readValue(ifs,childLabel);
-				node->childs[i] = m_nodes[childLabel];
-				if(false)	cout<<"->"<<childLabel;
-			}
+			m_nodes[i]->load(ifs, m_pixels,m_nodes,saveType);
 		}
-		if(false)	cout<<endl;
-		m_nodes[j]=node;
+		for(int i = 0; i < m_numLeafs; i++)
+		{
+			int leaf_label;
+			readValue(ifs, leaf_label);
+			m_leafs[i] = m_nodes[leaf_label];
+		}
+		int root_label;
+		readValue(ifs, root_label);
+		m_root = m_nodes[root_label];
+
 	}
-	m_numLeafs = m_leafs.size();
-	//4. get m_root, it is the last pixel of m_nodes
-	m_root = m_nodes[m_numNodes -1];
-	
-	//5. get global variable
-	readValue(ifs,m_width);
-	readValue(ifs,m_height);
-	readValue(ifs,m_depth);
-	if(false)	cout<<"m_width = "<<m_width<<"  m_height = "<<m_height<<"  m_depth = "<<m_depth<<endl;
-	readValue(ifs,m_minSize);
-	readValue(ifs,m_maxSize);
-	readValue(ifs,m_singleSize);
-	if(false)	cout<<"m_minSize = "<<m_minSize<<" m_maxSize = "<<m_maxSize<<" m_singleSize = "<<m_singleSize<<endl;
-	//ifs.close();
-	
-	//6. set parent for each node
-	m_root->parent = m_root;
-	deque<Node*> queue;
-	Node* front = NULL;
-	queue.push_back(m_root);
-	while(!queue.empty())
+	else
 	{
-		front = queue.front();
-		queue.pop_front();
-		Nodes::iterator it = front->childs.begin();
-		while(it != front->childs.end())
+		ifs>>m_width;
+		ifs>>m_height;
+		ifs>>m_depth;
+		ifs>>m_minSize;
+		ifs>>m_maxSize;
+		ifs>>m_singleSize;
+		ifs>>m_numPixels;
+		ifs>>m_numNodes;
+		ifs>>m_numLeafs;
+
+		m_pixels.resize(m_numPixels);
+		m_nodes.resize(m_numNodes);
+
+		for(int i = 0; i < m_numNodes; i++) m_nodes[i] = new Node;
+
+		m_leafs.resize(m_numLeafs);
+
+
+		for(int i = 0; i < m_numPixels; i++)
 		{
-			(*it)->parent = front;
-			queue.push_back(*it);
-			it++;
+			m_pixels[i].load(ifs, m_pixels,m_nodes,saveType);
 		}
+
+		for(int i = 0; i < m_numNodes; i++)
+		{
+			m_nodes[i]->load(ifs, m_pixels,m_nodes,saveType);
+		}
+		for(int i = 0; i < m_numLeafs; i++)
+		{
+			int leaf_label;
+			ifs>>leaf_label;
+			m_leafs[i] = m_nodes[leaf_label];
+		}
+		int root_label;
+		ifs>>root_label;
+		m_root = m_nodes[root_label];
 	}
-	//7. set paths
-	//setPaths();
-	//8. set post order, pre order and breadth first searching order
-	return true;
+	if(ifs.good()) return true;
+	else return false;
 }
 
 void ComponentTree::clear()

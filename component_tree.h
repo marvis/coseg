@@ -29,6 +29,8 @@ public:
 	{
 	    public:
 		Pixel();
+		bool save(ofstream& ofs, bool saveType = true) const;
+		bool load(ifstream& ifs, vector<Pixel>& pixels, vector<Node*>& nodes, bool saveType=true);
 		void merge_entry(Pixel* entry);
 	    public:
 		int  pos;
@@ -42,6 +44,8 @@ public:
 	{
 	    public:
 		Node(){};
+		bool save(ofstream& ofs, bool saveType=true) const;
+		bool load(ifstream& ifs, vector<Pixel>& pixels, vector<Node*>& nodes, bool saveType=true);
 		vector<Pixel*> alpha_pixels();
 		vector<Pixel*> beta_pixels();
 		vector<int> alpha_points();
@@ -53,9 +57,9 @@ public:
 
 	    public:
 		int label;          // the store index in m_nodes, start from 0
-                int highest_beta_level;    // the highest beta level
-                int highest_alpha_level;   // the highest alpha level
 		int lowest_level;          // the lowest level
+                int highest_alpha_level;   // the highest alpha level
+                int highest_beta_level();    // the highest beta level
 		double mean_level();
 		vector<double> center();
 
@@ -75,9 +79,9 @@ public:
 	bool create(char * imgfile, int _minSize, int _maxSize, int _singleSize);
 	
 	bool load(const char* from_tree_file);
-	bool load(ifstream& ifs);
+	bool load(ifstream& ifs, bool saveType = true);
 	bool save(const char* to_tree_file) const;
-	bool save(ofstream& ofs) const;
+	bool save(ofstream& ofs, bool saveType = true) const;
 	void clear();
 
 	int width() const;
@@ -102,8 +106,6 @@ public:
 private:
 	void printTreeRecursively(int , int) const;
 	
-public:
-	Node* m_root;  //the root Node
 private:
 	int m_width ;
 	int m_height;
@@ -120,6 +122,7 @@ private:
         vector<Pixel> m_pixels;
 	Nodes m_nodes; //store the nodes in post order
 	Nodes m_leafs; //store all the leafs
+	Node* m_root;  //the root Node
 };
 
 class DisjointSets
