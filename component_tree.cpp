@@ -280,6 +280,7 @@ void ComponentTree::Node::merge_node(ComponentTree::Node *node)
 			this->childs.erase(it);
 			break;
 		}
+		it++;
 	}
     }
     else cerr<<"merge_node error!"<<endl; 
