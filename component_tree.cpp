@@ -651,13 +651,13 @@ bool ComponentTree::save(const char* treefile) const
 	ofstream ofs;
 	bool saveType = true;
 	string str_file(treefile);
-	if(str_file.find("bin") != string::npos)
+	if(str_file.find(".bin") != string::npos)
 	{
 		cout<<"save to binary file : "<<treefile<<endl;
 		saveType = false;
 		ofs.open(treefile, ios_base::out|ios_base::binary);
 	}
-	else if(str_file.find("txt") != string::npos)
+	else if(str_file.find(".txt") != string::npos)
 	{
 		cout<<"save to txt file : "<<treefile<<endl;
 		saveType = true;
@@ -767,19 +767,29 @@ bool ComponentTree::save(ofstream& ofs, bool saveType) const
  * the same role as create(), but load will do one more thing, set 
  *                            m_leafs and m_numLeafs 
  **********************************************************************************/
+bool ComponentTree::reload(const char* treefile)
+{
+	this->clear();
+	return this->load(treefile);
+}
 
 bool ComponentTree::load(const char* treefile)
 {
+	if(this->m_numNodes != 0 && this->m_numPixels != 0)
+	{
+		cerr<<"Load error: Please clear the data first"<<endl;
+		return false;
+	}
 	ifstream ifs;
 	bool saveType = true;
 	string str_file(treefile);
-	if(str_file.find("bin") != string::npos)
+	if(str_file.find(".bin") != string::npos)
 	{
 		cout<<"load binary file: "<<treefile<<endl;
 		saveType = false;
 		ifs.open(treefile, ios_base::in|ios_base::binary);
 	}
-	else if(str_file.find("txt") != string::npos)
+	else if(str_file.find(".txt") != string::npos)
 	{
 		cout<<"load txt file: "<<treefile<<endl;
 		saveType = true;
@@ -1118,6 +1128,68 @@ int* ComponentTree::getMatrix(vector<int> labels, vector<int> values ,int ini) c
 	return matrix;
 }
 
+void ComponentTree::setWeightMatrix(ComponentTree* tree2, vector<float> &weights)
+{
+	int rows = this->m_numNodes;
+	int cols = tree2->m_numNodes;
+	weights.resize(rows*cols);
+	for(int i=0; i < rows*cols; i++) weights[i]=0.0;
+	int* matrix1 = this->getReverseAlphaMapping();
+	int* matrix2 = this->getReverseAlphaMapping();
+	int pixel_num = this->m_numPixels;
+	for(int i = 0; i < pixel_num; i++)
+	{
+		int label1 = matrix1[i];
+		int label2 = matrix2[i];
+		weights[label1 * cols + label2]++;
+	}
+	for(int i = 0; i < rows; i++)
+	{
+		for(int j = 0; j < cols; j++)
+		{
+		        ComponentTree::Node* node2 = tree2->getNode(j);
+                        if(! node2->childs.empty())
+                        {
+                                vector<Node*>::iterator it = node2->childs.begin();
+                                while( it != node2->childs.end())
+                                {
+                                        int jj = (*it)->label;
+                                        weights[i*cols + j] += weights[i*cols + jj];
+                                        it++;
+                                }
+                        }
+
+		}
+	}
+
+	for(int i = 0; i < rows; i++)
+	{
+		for(int j = 0; j < cols; j++)
+		{
+			ComponentTree::Node* node1 = this->getNode(i);
+			if(! node1->childs.empty())
+			{
+				vector<Node*>::iterator it = node1->childs.begin();
+				while( it != node1->childs.end())
+				{
+					int ii = (*it)->label;
+					weights[i*cols + j] += weights[ii*cols + j];
+					it++;
+				}
+			}
+		}
+	}
+
+	for(int i = 0; i < rows; i++)
+	{
+		for(int j = 0; j < cols; j++)
+		{
+			float intersection = weights[i* cols + j];
+			float joint = this->getNode(i)->beta_size + tree2->getNode(j)->beta_size - intersection;
+			weights[i*cols + j] = intersection/joint;
+		}
+	}
+}
 
 void ComponentTree::printReverseAlphaMapping() const
 {
