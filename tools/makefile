@@ -3,10 +3,12 @@ CXX = g++ -g -Wall
 
 CXXFLAGS = -ltiff
 
-OBJ = ../myalgorithms.o ../component_tree.o  create_tree.o
+OBJ_CREATE = ../myalgorithms.o ../component_tree.o  create_tree.o
+OBJ_LOAD = ../myalgorithms.o ../component_tree.o  load_tree.o
 
-CT3D: $(OBJ)
-	$(CXX) $(CXXFLAGS) $(OBJ) -o create_tree
+all: $(OBJ_CREATE) $(OBJ_LOAD)
+	$(CXX) $(CXXFLAGS) $(OBJ_CREATE) -o create_tree
+	$(CXX) $(CXXFLAGS) $(OBJ_LOAD) -o load_tree
 
 (%.o):(%.cpp)
 	$(CXX) $(CXXFLAGS) -c $< -o $*.o

@@ -23,8 +23,15 @@ int main(int argc, char * argv[])
 
 	ComponentTree tree;
 	tree.create(argv[1], min_thresh, max_thresh, single_thresh);
-	string str_file(argv[1]);
-	str_file = str_file.substr(0, str_file.rfind("."));
-	str_file.append(".bin.tree");
-	tree.save(str_file.c_str());
+	if(argc == 5)
+	{
+		string str_file(argv[1]);
+		str_file = str_file.substr(0, str_file.rfind("."));
+		str_file.append(".bin.tree");
+		tree.save(str_file.c_str());
+	}
+	else if(argc == 6)
+	{
+		tree.save(argv[5]);
+	}
 }
