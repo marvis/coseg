@@ -370,6 +370,18 @@ ComponentTree::Nodes ComponentTree::Node::getBreadthFirstNodes()
     return breadthFirst;
 }
 
+int ComponentTree::Node::getTreeHeight()
+{
+	if(this == this->parent) return 0;
+	int height = 0;
+	Node* node = this;
+	while(node != node->parent)
+	{
+		height++;
+		node = node->parent;
+	}
+	return height;
+}
 /******************************************************************
   * ComponentTree : construct component tree
   * 1. create :  create the tree
@@ -997,63 +1009,54 @@ int ComponentTree::leafNum() const
 /*****************************************************************
  * printTree : print component Node recursively
  *****************************************************************/
-void ComponentTree::printTreeRecursively(int label, int spaceCount) const
-{
-	assert(label >=0);
-	Node* node = m_nodes[label];
-	int _selfSize = node->alpha_size;
-	cout.precision(3);
-	for(Nodes::iterator it = node->childs.begin(); it != node->childs.end(); it++)
-	{
-		_selfSize -= (*it)->alpha_size;
-	}
-	if(node->childs.empty())
-	{
-		cout<<label<<" : "<<node->lowest_level<<" "<<node->alpha_size<<" "<<_selfSize<<"  leaf"<<endl;
-		return;
-	}
-	else
-	{
-		cout<<label<<" : "<<node->lowest_level<<" "<<node->alpha_size<<" "<<_selfSize<<endl;
-	}
-	
-	for(Nodes::iterator it = node->childs.begin(); it != node->childs.end(); it++)
-	{
-		for(int i=0; i < spaceCount; i++)
-		{
-			cout<<" ";
-		}
-		cout<<"|"<<endl;
-		for(int i=0; i < spaceCount; i++)
-		{
-			cout<<" ";
-		}
-		cout<<"|__";
-	
-		printTreeRecursively((*it)->label, spaceCount+3);
-	}
-}
 
-void ComponentTree::printTree(int label) const
+void ComponentTree::printTree(ComponentTree::Node* node) const
 {
-	if(m_root == NULL)
+	if(node == NULL)
 	{
-		cout<<"Warning : The tree is empty!"<<endl;
-		return;
+		node = m_root;
+		assert(node != NULL);
 	}
-	if(label == -1) label = m_root->label;
-	assert(label>=0);
 	cout<<"---------------Component Tree-------------------------"<<endl;
-	cout<<"label : lowest_level totalsize pixelSize"<<endl;
-	printTreeRecursively(label,0);
+	cout<<"label : lowest_level alphasize betaSize"<<endl;
+	vector<Node*> pre_nodes = node->getPreOrderNodes();
+	vector<Node*>::iterator it = pre_nodes.begin();
+	cout.precision(3);
+	while(it != pre_nodes.end())
+	{
+		if((*it) != node)
+		{
+			int space_count = 3 * ((*it)->getTreeHeight()-1);
+			for(int i=0; i < space_count; i++)
+			{
+				cout<<" ";
+			}
+			cout<<"|"<<endl;
+			for(int i=0; i < space_count; i++)
+			{
+				cout<<" ";
+			}
+			cout<<"|__";
+		}
+		
+		cout<<(*it)->label<<" : "<<(*it)->lowest_level<<" "<<(*it)->alpha_size<<" "<<(*it)->beta_size;
+		if((*it)->childs.empty())
+		{
+			cout<<"  leaf";
+		}
+		cout<<endl;
+
+		it++;
+	}
 	cout<<endl;
 	cout<<"width = "<<m_width<<"\theight = "<<m_height<<"\tdepth = "<<m_depth<<endl;
 	cout<<"minSize = "<<m_minSize<<"\tmaxSize = "<<m_maxSize<<"\tsingleSize = "<<m_singleSize<<endl;
 	cout<<"total node : "<<m_numNodes<<"\tleaf node : "<<m_numLeafs<<endl;
 	cout<<"------------------------------------------------------------"<<endl;
 	cout<<"pre order : ";
-	vector<Node*> pre_nodes = this->root()->getPreOrderNodes();
-	vector<Node*>::iterator it = pre_nodes.begin();
+	//vector<Node*> pre_nodes = this->root()->getPreOrderNodes();
+	//vector<Node*>::iterator
+	it = pre_nodes.begin();
 	while(it != pre_nodes.end()) 
 	{
 		cout<<(*it)->label<<" ";
@@ -1087,9 +1090,9 @@ void ComponentTree::printTree(int label) const
  *
  * used function : label(vertex)
  ****************************************************************************/
-int* ComponentTree::getReverseAlphaMapping() const
+vector<int> ComponentTree::getReverseAlphaMapping() const
 {
-        int* matrix = new int[m_numPixels];
+        vector<int> matrix(m_numPixels);
 	for(int i = 0; i < m_numPixels; i++)
 	{
 		matrix[i] = m_pixels[i].node->label;
@@ -1135,8 +1138,8 @@ void ComponentTree::setWeightMatrix(ComponentTree* tree2, vector<float> &weights
 	int cols = tree2->m_numNodes;
 	weights.resize(rows*cols);
 	for(int i=0; i < rows*cols; i++) weights[i]=0.0;
-	int* matrix1 = this->getReverseAlphaMapping();
-	int* matrix2 = this->getReverseAlphaMapping();
+	vector<int> matrix1 = this->getReverseAlphaMapping();
+	vector<int> matrix2 = this->getReverseAlphaMapping();
 	int pixel_num = this->m_numPixels;
 	for(int i = 0; i < pixel_num; i++)
 	{
@@ -1194,7 +1197,7 @@ void ComponentTree::setWeightMatrix(ComponentTree* tree2, vector<float> &weights
 
 void ComponentTree::printReverseAlphaMapping() const
 {
-	int* matrix = getReverseAlphaMapping();
+	vector<int> matrix = getReverseAlphaMapping();
 	cout<<"------------------------ All Labels -----------------------------------"<<endl;
 	int i = 0;
 	int w = (int)(log10((float)m_numNodes)) + 1;
@@ -1222,8 +1225,6 @@ void ComponentTree::printReverseAlphaMapping() const
 	cout<<"width = "<<m_width<<"\t height = "<<m_height<<"\t depth = "<<m_depth<<endl<<endl;
 	cout<<"label count : "<<m_numNodes<<endl;
 	cout<<"----------------------------------------------------------------------"<<endl;
-	delete matrix;
-	
 }
 
 

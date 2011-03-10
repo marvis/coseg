@@ -55,6 +55,7 @@ class ComponentTree
 				Nodes getPostOrderNodes(); //return all the node which stores in post order, equilivalent to m_root
 				Nodes getPreOrderNodes(); //return all the node which stores in post order, equilivalent to m_root
 				Nodes getBreadthFirstNodes(); //return all the node which stores in post order, equilivalent to m_root
+				int getTreeHeight();       // the distant from root, the root node with height 0
 
 			public:
 				int label;          // the store index in m_nodes, start from 0
@@ -93,7 +94,7 @@ class ComponentTree
 
 		Paths getPaths() const;
 
-		int* getReverseAlphaMapping() const; //get the matrix of labels
+		vector<int> getReverseAlphaMapping() const; //get the matrix of labels
 		int* getMatrix(vector<int> labels , vector<int> values, int ini_value) const; 
 		void setWeightMatrix(ComponentTree* tree2, vector<float> &weights);
 
@@ -101,12 +102,9 @@ class ComponentTree
 		int leafNum() const;
 		int pixelNum() const;
 
-		void printTree(int label = -1) const;
+		void printTree(Node* node = NULL) const;
 		void printReverseAlphaMapping() const;
 		void printPaths() const;
-
-	private:
-		void printTreeRecursively(int , int) const;
 
 	private:
 		int m_width ;
