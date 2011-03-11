@@ -8,223 +8,163 @@
 
 #ifndef CELL_TRACK_H_H
 #define CELL_TRACK_H_H
+
 #include <vector>
 #include <set>
+#include <string>
+#include <iostream>
+#include <fstream>
 #include <map>
 #include "../component_tree.h"
 
-#define DEFAULT_MIN_FILTER 800
-#define DEFAULT_MAX_FILTER 10000
-#define DEFAULT_SINGLE_FILTER 100
-#define DEFAULT_INPUTDIR "./input"
-#define DEFAULT_OUTPUTDIR "./output"
-
 using namespace std;
 
+typedef ComponentTree::Node TNode;
+typedef int TIME;
+
+
 class CellTrack
-{	
-public:
-	
-	class Cell;
-	
-	class Track;
-	
-	typedef vector<Cell*> Frame;
-	
-	class rgb_pixel;
-	
-	class palette;
-	
+{
+	public:
+		class Cell;
+		class Frame;
+		class Track;
+		typedef vector<Frame*> Frames;
+		typedef vector<Track*> Tracks;
+	public:
 	class Cell
 	{
-	public:
-		Cell()
-		{
-			label = 0;
-			trackId = 0;
-			prev = NULL;
-			next = NULL;
-		}
-	public:
-		int label;
-		
-		int prevLabel;
-		
-		int nextLabel;
-				
-		int trackId;
-		
-		Cell* prev;
-		
-		Cell* next;
-		
-	};
-	
-	class Track 
-	{
-	public:
-		Track()
-		{
-			trackId = 0;
-			altitude = 0.0;
-			start = 0;
-			end = 0;
-			entry = NULL;
-		}
-		public :
-		int trackId;
-		
-		double altitude;
-		
-		int start; //the first cell's frame id, the minimul is 0
-		
-		int end; // the id after last cell's frame id, the maximul is m_numFrames
-		// end - start is the num of cells in the track
-		Cell* entry;
-	};
-	
-	// =====================================================
-	class rgb_pixel
-	// =====================================================
-	{
-		
-	public:
-		
-		unsigned char r,g,b;
-		
-	public:
-		
-		rgb_pixel(unsigned char r_, unsigned char g_, unsigned char b_);
-		
-		rgb_pixel(unsigned int rgb);
-		
-		rgb_pixel();
-		
-		bool operator==(const rgb_pixel& P);
-		
-		bool operator<(const rgb_pixel& P) const;
-		
-		bool operator!=(const rgb_pixel& P);
-		
-	};
-	// =====================================================
-	// =====================================================
-	
-	
-	
-	// =====================================================
-	class palette
-	// =====================================================
-	{
-		
-	public:
-		
-		typedef set<int> int_set;
-		
-	private:
-		
-		typedef map<rgb_pixel,int> reverse_palette_map;
-		
-		int palette_size;
-		
-		int_set all_colors;
-		
-		vector<rgb_pixel> this_palette;
-		reverse_palette_map reverse_palette;
-		
-	public:
-		
-		int_set& get_all_colors();
-		
-		palette();
-		
-		palette(int size);
-		
-		int size();
-		
-		rgb_pixel operator()(int i);
-		
-		int operator()(const rgb_pixel& p);
-		
-		void init(int size);
-		
-	};
-	// =====================================================
-	
-	class Alignment
-	{
-	public:
-		Alignment();
-		~Alignment();
-		bool align(ComponentTree&, ComponentTree&);
-		bool align(ComponentTree&, Frame& ,Frame&);
-		double* result();
-		void clear();
-		
-	private:
-		vector< vector<float> >  m_weightMatrix;  //use float instead of double to save space
-		int m_numVars1;      // first is the num of nodes in tree1, another in tree2
-		int m_numVars2;
-		double* m_row;       // store the match result
-		// are mapped one by one
-	};
-	
-public:
-	CellTrack();
-			
-	~CellTrack();
-	
-	void clear();  //clear all information except m_trees
+		public:
+			friend class Frame;
+		public:
+			Cell();
+			Track* getTrack() const;
+			void setTrack(Track*);
+			//double meanHeight() const;
+			void draw() const;
+			void drawCenter() const;
 
-	void createTracking(int argc, char* argv[]);
+			vector<int>  getCenterArea() const;
+			void setCenterArea();
+
+			TNode* getFirNode(ComponentTree*) const;                    // the first alignment result
+			void setFirNode(TNode*);                    // the first alignment result
+
+			TNode* getSecNode(ComponentTree*) const;                    // the second alignment result
+			void setSecNode(TNode*);                    // the second alignment result
+
+			TNode* getCurNode(ComponentTree*) const;                    // original node
+			void setCurNode(TNode* );                    // original node
+
+			TNode* getModNode(ComponentTree*) const;                    // modified node
+			void setModNode(TNode*);                    // modified node
+
+			TNode* getNode(ComponentTree*) const;
+
+			Cell* getPrevCell() const;
+			void  setPrevCell(Cell*);
+
+			Cell* getNextCell() const;
+			void  setNextCell(Cell*);
+
+			vector<int> getVertices() const;
+		private:
+			int m_fir_node_label;                    // the first alignment result
+			int m_sec_node_label;                    // the second alignment result
+			int m_cur_node_label;                    // original node
+			int m_mod_node_label;                    // modified node
+
+			Cell*  m_prev_cell;
+			Cell*  m_next_cell;
+			vector<int>    m_vertices;	          // seldom set this value
+
+			Track* m_track;              // used when in choose and remove operation
+	};
+
+	class Frame
+	{
+		public:
+			Frame();
+			void exportImage(int width, int height, int depth, char* img_file);
+			void addCell(Cell* cell);
+			bool createFromImage(char* img_file);
+			void mergePrevFrame(Frame* prev_frame); // todo: consider NULL, free prev_frame
+			void linkPrevFrame(Frame* frame);  //  used when loading image files
+			int cellNum() const;
+			ComponentTree* getTree();
+			void setTree(ComponentTree*);
+			void setTreeFile(char* tree_file);
+
+			void releaseTree();
+			void releaseVertices();
+			void loadVertices(ComponentTree*);
+
+		private:
+			ComponentTree* m_tree; // replaced by getTree
+			string m_tree_file;
+			vector<Cell*>  m_cells;
+	};	
+
 	
-	bool saveTracking(char* trackfile = "ct3d.tr");
-	
-	bool loadTracking(int argc, char* argv[]);
-	
-	void saveImages();
-	
-	void saveGraph() const;
-	
-	void saveGraph2() const;
-	
-	bool tracking();
-	
-	void createPalette();
-		
-	int frameCount() const; 
-	
-	int trackCount() const;
-	
-	ComponentTree& getTree(int);
-	
-	void filterCells(double threshold = -1.0);
-	
-	void resetCells();
-	
-private:
-	
-	vector<ComponentTree> m_trees;
-	
-	vector<Frame> m_frames; 
-	
-	vector<Track> m_tracks; 
-	
-	vector< map<int,int> > m_matches;
-		
+	class Track
+	{
+		public:
+			Track();
+			Cell* getStart() const;
+			Cell* getEnd() const;
+			void addNext(Cell* cell);
+			vector<Cell*> getCells() const;
+			int cellNum() const;
+		private:
+			int m_start_time;        // 0 for the first time
+			vector<Cell*> m_cells;
+			int m_colorId;
+	};
+
+	public:
+	CellTrack();
+	~CellTrack();
+	bool save(char* track_file);
+	bool save(ofstream& ofs, bool saveType);
+	bool load(char* track_file);              // todo: check beforehand
+	bool load(ifstream& ifs, bool saveType); 
+	bool reload(char* track_file);
+
+	bool createFromTrees(vector<char*> tree_files);
+	bool createFromImages(vector<char*> img_files);
+	void exportImages(char* prefix) const;
+	//CellTrack* choose(vector<Track*> & tracks);
+	//CellTrack* chooseOnly(vector<Track*> & tracks);
+	//CellTrack* remove(vector<Track*> & tracks);
+	//CellTrack* extractFrames();         // todo: reset time in each track
+
+	Frame* getFrame(int time) const;
+	Track* getTrack(int index) const;
+	//vector<Track*> getTracks() const;
+	//vector<Track*> getTracks(vector<vector<Cell*> > &frames);
+
+	int frameNum() const;
+	int trackNum() const;
+
+	public:
+	void releaseFrames();
+	void releaseTracks();
+	void releaseAllCells();
+
+	static bool createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2,vector<Frame*> &frames );
+	static bool createFramesFromTrees(vector<char*> tree_files,vector<Frame*> &frames);
+	static bool createFramesFromImages(vector<char*> img_files,vector<Frame*> &frames );
+	static bool createTracksFromFrames(Frames & frames, vector<Track*> &tracks );
+
+	private:
+	int m_width;
+	int m_height;
+	int m_depth;
+	//int m_startTime;   // 0 default, used when extractFramesand save
 	int m_numFrames;
-	
 	int m_numTracks;
-	
-	palette m_palette;
-	
-	vector<string> m_names;
-	
-	//string m_indir;
-	
-	string m_outdir;
-	
-	double m_threshold;
+	Frames m_frames;
+	Tracks m_tracks;
 };
 
 #endif

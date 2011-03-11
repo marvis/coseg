@@ -12,8 +12,8 @@
 #include <fstream>
 using namespace std;
 
-#define writeValue(ofs, v) (ofs).write((char*)&(v), sizeof(v))
-#define readValue(ifs, v)  (ifs).read((char*)&(v), sizeof(v))
+//#define writeValue(ofs, v) (ofs).write((char*)&(v), sizeof(v))
+//#define readValue(ifs, v)  (ifs).read((char*)&(v), sizeof(v))
 
 vector<int> bucketSort(unsigned char* img, int _size);
 
@@ -31,5 +31,15 @@ unsigned char* readtiff(char *myfile, int *width, int *height, int *depth,
 void writetiff( char *myfile, unsigned char *img, int channels,\
 			   int width, int height, int depth );
 
+void writeValue(ofstream &ofs, int v);
+void writeValue(ofstream &ofs, unsigned short v);
+void writeValue(ofstream &ofs, short v);
+void writeValue(ofstream &ofs, float v);
+void writeValue(ofstream &ofs, double v);
 
+void readValue(ifstream &ifs, int &v);
+void readValue(ifstream &ifs, unsigned short &v);
+void readValue(ifstream &ifs, short &v);
+void readValue(ifstream &ifs, float &v);
+void readValue(ifstream &ifs, double &v);
 #endif

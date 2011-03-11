@@ -204,7 +204,7 @@ bool ComponentTree::Node::load(ifstream& ifs, vector<ComponentTree::Pixel>& pixe
 	else return false;
 }
 
-vector<ComponentTree::Pixel*> ComponentTree::Node::alpha_pixels()
+vector<ComponentTree::Pixel*> ComponentTree::Node::getAlphaPixels()
 {
     vector<Pixel*> pixels;
     Pixel* start = this->entry_pixel;
@@ -218,23 +218,23 @@ vector<ComponentTree::Pixel*> ComponentTree::Node::alpha_pixels()
     return pixels;
 }
 
-vector<ComponentTree::Pixel*> ComponentTree::Node::beta_pixels()
+vector<ComponentTree::Pixel*> ComponentTree::Node::getBetaPixels()
 {
-    vector<Pixel*> pixels = alpha_pixels();
+    vector<Pixel*> pixels = getAlphaPixels();
 
     vector<Node*> post_order = this->getPostOrderNodes();
 
     vector<Node*>::iterator itr = post_order.begin();
     while(itr != post_order.end())
     {
-        vector<Pixel*> temp_pixels = (*itr)->alpha_pixels();
+        vector<Pixel*> temp_pixels = (*itr)->getAlphaPixels();
         pixels.insert(pixels.end(),temp_pixels.begin(), temp_pixels.end());
         itr++;
     }
     return pixels;
 }
 
-vector<int> ComponentTree::Node::alpha_points()
+vector<int> ComponentTree::Node::getAlphaPoints()
 {
     vector<int> points;
     Pixel* start = this->entry_pixel;
@@ -248,9 +248,9 @@ vector<int> ComponentTree::Node::alpha_points()
     return points;
 }
 
-vector<int> ComponentTree::Node::beta_points()
+vector<int> ComponentTree::Node::getBetaPoints()
 {
-    vector<Pixel*> pixels = beta_pixels();
+    vector<Pixel*> pixels = getBetaPixels();
     vector<int> points;
     vector<Pixel*>::iterator itr = pixels.begin();
     while(itr != pixels.end())
@@ -295,17 +295,17 @@ void ComponentTree::Node::merge_node(ComponentTree::Node *node)
     delete node;
 }
 
-ComponentTree::Nodes ComponentTree::Node::getPostOrderNodes()
+ComponentTree::Nodes ComponentTree::Node::getPostOrderNodes() const
 {
     vector<Node*> postOrder;
 
-    stack<Node*> post_stack;
+    stack<const Node*> post_stack;
     stack<bool> status_stack;
     post_stack.push(this);
     status_stack.push(false);
     while(! post_stack.empty())
     {
-            Node* top = post_stack.top();
+            Node* top =(Node*) post_stack.top();
             bool&  top_status = status_stack.top();
             if(top_status || top->childs.empty())
             {
@@ -328,15 +328,15 @@ ComponentTree::Nodes ComponentTree::Node::getPostOrderNodes()
     return postOrder;
 }
 
-ComponentTree::Nodes ComponentTree::Node::getPreOrderNodes()
+ComponentTree::Nodes ComponentTree::Node::getPreOrderNodes() const
 {
     vector<Node*> preOrder;
 
-    stack<Node*> pre_stack;
+    stack<const Node*> pre_stack;
     pre_stack.push(this);
     while(! pre_stack.empty())
     {
-            Node* top = pre_stack.top();
+            Node* top =(Node*) pre_stack.top();
             pre_stack.pop();
             preOrder.push_back(top);
             vector<Node*>::reverse_iterator it = top->childs.rbegin();
@@ -349,15 +349,15 @@ ComponentTree::Nodes ComponentTree::Node::getPreOrderNodes()
     return preOrder;
 }
 
-ComponentTree::Nodes ComponentTree::Node::getBreadthFirstNodes()
+ComponentTree::Nodes ComponentTree::Node::getBreadthFirstNodes() const
 {
     vector<Node*> breadthFirst;
-    deque<Node*> breadth_queue;
+    deque<const Node*> breadth_queue;
     Node* front;
     breadth_queue.push_back(this);
     while(!breadth_queue.empty())
     {
-            front = breadth_queue.front();
+            front = (Node*)breadth_queue.front();
             breadth_queue.pop_front();
             breadthFirst.push_back(front);
             vector<Node*>::iterator it = front->childs.begin();
@@ -370,17 +370,49 @@ ComponentTree::Nodes ComponentTree::Node::getBreadthFirstNodes()
     return breadthFirst;
 }
 
-int ComponentTree::Node::getTreeHeight()
+int ComponentTree::Node::getTreeHeight() const
 {
 	if(this == this->parent) return 0;
-	int height = 0;
-	Node* node = this;
-	while(node != node->parent)
+	else
 	{
-		height++;
-		node = node->parent;
+		int height = 1;
+		Node* node = this->parent;
+		while(node != node->parent)
+		{
+			height++;
+			node = node->parent;
+		}
+		return height;
 	}
-	return height;
+}
+
+int ComponentTree::Node::getLabel() const
+{
+	return this->label;
+}
+int ComponentTree::Node::getLowestLevel() const
+{
+	return this->lowest_level;
+}
+int ComponentTree::Node::getHighestAlphaLevel() const
+{
+	return this->highest_alpha_level;
+}
+int ComponentTree::Node::getHighestLevel() const
+{
+	return -1;
+}
+int ComponentTree::Node::getAlphaSize() const
+{
+	return this->alpha_size;
+}
+int ComponentTree::Node::getBetaSize() const
+{
+	return this->beta_size;
+}
+ComponentTree::Node* ComponentTree::Node::getParent() const
+{
+	return this->parent;
 }
 /******************************************************************
   * ComponentTree : construct component tree
@@ -627,7 +659,7 @@ bool ComponentTree::create(char * imgfile , int _minSize , int _maxSize, int _si
 		Node* node = m_nodes[i];
 		node->label = i;
 		if(node->childs.empty()) m_leafs.push_back(node);
-		vector<Pixel*> pixels = node->alpha_pixels();
+		vector<Pixel*> pixels = node->getAlphaPixels();
 		vector<Pixel*>::iterator it = pixels.begin();
 		while(it != pixels.end())
 		{
@@ -1018,9 +1050,42 @@ void ComponentTree::printTree(ComponentTree::Node* node) const
 		assert(node != NULL);
 	}
 	cout<<"---------------Component Tree-------------------------"<<endl;
-	cout<<"label : lowest_level alphasize betaSize"<<endl;
+	cout<<"width = "<<m_width<<"\theight = "<<m_height<<"\tdepth = "<<m_depth<<endl;
+	cout<<"minSize = "<<m_minSize<<"\tmaxSize = "<<m_maxSize<<"\tsingleSize = "<<m_singleSize<<endl;
+	cout<<"total node : "<<m_numNodes<<"\tleaf node : "<<m_numLeafs<<endl;
+	cout<<endl;
+	cout<<"pre order : ";
 	vector<Node*> pre_nodes = node->getPreOrderNodes();
 	vector<Node*>::iterator it = pre_nodes.begin();
+	while(it != pre_nodes.end()) 
+	{
+		cout<<(*it)->label<<" ";
+		it++;
+	}
+	cout<<endl<<endl;
+	
+	cout<<"post order : ";
+	vector<Node*> post_nodes = this->root()->getPostOrderNodes();
+	it = post_nodes.begin();
+	while(it != post_nodes.end())
+	{
+		cout<<(*it)->label<<" ";
+		it++;
+	}
+	cout<<endl<<endl;
+
+	cout<<"breadth first : ";
+	vector<Node*> breadth_nodes = this->root()->getBreadthFirstNodes();
+	it = breadth_nodes.begin();
+	while(it != breadth_nodes.end())
+	{
+		cout<<(*it)->label<<" ";
+		it++;
+	}
+	cout<<endl<<endl;
+
+	cout<<"label : lowest_level alphasize betaSize"<<endl;
+	it = pre_nodes.begin();
 	cout.precision(3);
 	while(it != pre_nodes.end())
 	{
@@ -1049,40 +1114,8 @@ void ComponentTree::printTree(ComponentTree::Node* node) const
 		it++;
 	}
 	cout<<endl;
-	cout<<"width = "<<m_width<<"\theight = "<<m_height<<"\tdepth = "<<m_depth<<endl;
-	cout<<"minSize = "<<m_minSize<<"\tmaxSize = "<<m_maxSize<<"\tsingleSize = "<<m_singleSize<<endl;
-	cout<<"total node : "<<m_numNodes<<"\tleaf node : "<<m_numLeafs<<endl;
 	cout<<"------------------------------------------------------------"<<endl;
-	cout<<"pre order : ";
-	//vector<Node*> pre_nodes = this->root()->getPreOrderNodes();
-	//vector<Node*>::iterator
-	it = pre_nodes.begin();
-	while(it != pre_nodes.end()) 
-	{
-		cout<<(*it)->label<<" ";
-		it++;
-	}
-	cout<<endl;
-	
-	cout<<"post order : ";
-	vector<Node*> post_nodes = this->root()->getPostOrderNodes();
-	it = post_nodes.begin();
-	while(it != post_nodes.end())
-	{
-		cout<<(*it)->label<<" ";
-		it++;
-	}
-	cout<<endl;
-	cout<<"breadth first : ";
-	vector<Node*> breadth_nodes = this->root()->getBreadthFirstNodes();
-	it = breadth_nodes.begin();
-	while(it != breadth_nodes.end())
-	{
-		cout<<(*it)->label<<" ";
-		it++;
-	}
-	cout<<endl;
-	 
+ 
 }
 
 /****************************************************************************
@@ -1106,7 +1139,7 @@ vector<int> ComponentTree::getReverseAlphaMapping() const
  * output : a int* matrix, the vertice will be assign with 
  *          the pixel of values
  ********************************************************************/
-int* ComponentTree::getMatrix(vector<int> labels, vector<int> values ,int ini) const
+/*int* ComponentTree::getMatrix(vector<int> labels, vector<int> values ,int ini) const
 {
         int* matrix = new int[m_numPixels];
         //memset(matrix,0,m_numPixels);
@@ -1121,7 +1154,7 @@ int* ComponentTree::getMatrix(vector<int> labels, vector<int> values ,int ini) c
 		label = labels[i];             //the label will start from 0
 		value = values[i];		
 		Node* node = m_nodes[label];
-		vector<int> points = node->beta_points();
+		vector<int> points = node->getBetaPoints();
 		vector<int>::iterator it = points.begin();
 		while(it != points.end())
 		{
@@ -1131,7 +1164,7 @@ int* ComponentTree::getMatrix(vector<int> labels, vector<int> values ,int ini) c
 	}
 	return matrix;
 }
-
+*/
 void ComponentTree::setWeightMatrix(ComponentTree* tree2, vector<float> &weights)
 {
 	int rows = this->m_numNodes;

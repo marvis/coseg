@@ -405,3 +405,128 @@ void writetiff( char *myfile, unsigned char *img, int channels, int width, int h
     }
 }
 
+void writeValue(ofstream &ofs, int v)
+{
+    if(ofs.good())
+        ofs.write((char*)&v, sizeof(int));
+    else
+    {
+        cerr<<"write int value error."<<endl;
+        exit(-1);
+    }
+}
+
+void writeValue(ofstream &ofs, unsigned short v)
+{
+    if(ofs.good())
+        ofs.write((char*)&v, sizeof(unsigned short));
+    else
+    {
+        cerr<<"write unsigned short value error."<<endl;
+        exit(-1);
+    }
+}
+
+void writeValue(ofstream &ofs, short v)
+{
+    if(ofs.good())
+        ofs.write((char*)&v, sizeof(short));
+    else
+    {
+        cerr<<"write short value error."<<endl;
+        exit(-1);
+    }
+}
+
+void writeValue(ofstream &ofs, double v)
+{
+    if(ofs.good())
+        ofs.write((char*)&v, sizeof(double));
+    else
+    {
+        cerr<<"write double error."<<endl;
+        exit(-1);
+    }
+}
+
+void writeValue(ofstream &ofs, float v)
+{
+    if(ofs.good())
+        ofs.write((char*)&v, sizeof(float));
+    else
+    {
+        cerr<<"write float error."<<endl;
+        exit(-1);
+    }
+}
+
+void readValue(ifstream &ifs, int& v)
+{
+    if(ifs.good())
+    {
+        ifs.read((char*)&v, sizeof(int));
+        return;
+    }
+    else
+    {
+        cerr<<"read int value error"<<endl;
+        exit(-1);
+    }
+}
+
+void readValue(ifstream &ifs, unsigned short& v)
+{
+    if(ifs.good())
+    {
+        ifs.read((char*)&v, sizeof(unsigned short));
+        return;
+    }
+    else
+    {
+        cerr<<"read unsigned short value error"<<endl;
+        exit(-1);
+    }
+}
+
+void readValue(ifstream &ifs, short& v)
+{
+    if(ifs.good())
+    {
+        ifs.read((char*)&v, sizeof(short));
+        return;
+    }
+    else
+    {
+        cerr<<"read short value error"<<endl;
+        exit(-1);
+    }
+}
+
+void readValue(ifstream &ifs, double& v)
+{
+    if(ifs.good())
+    {
+        ifs.read((char*)&v, sizeof(double));
+        return;
+    }
+    else
+    {
+        cerr<<"read double value error"<<endl;
+        exit(-1);
+    }
+}
+
+void readValue(ifstream &ifs, float& v)
+{
+    if(ifs.good())
+    {
+        ifs.read((char*)&v, sizeof(float));
+        return;
+    }
+    else
+    {
+        cerr<<"read float value error"<<endl;
+        exit(-1);
+    }
+}
+

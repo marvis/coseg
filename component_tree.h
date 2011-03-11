@@ -29,11 +29,15 @@ class ComponentTree
 		class Pixel
 		{
 			public:
+				friend class ComponentTree;
+				friend class Node;
+			public:
 				Pixel();
 				bool save(ofstream& ofs, bool saveType = true) const;
 				bool load(ifstream& ifs, vector<Pixel>& pixels, vector<Node*>& nodes, bool saveType=true);
 				void merge_entry(Pixel* entry);
-			public:
+
+			private:
 				int  pos;
 				Pixel * next;		 // the next pixel
 				unsigned short level;
@@ -44,26 +48,35 @@ class ComponentTree
 		class Node
 		{
 			public:
+				friend class ComponentTree;
+				friend class Pixel;
+			public:
 				Node(){};
 				bool save(ofstream& ofs, bool saveType=true) const;
 				bool load(ifstream& ifs, vector<Pixel>& pixels, vector<Node*>& nodes, bool saveType=true);
-				vector<Pixel*> alpha_pixels();
-				vector<Pixel*> beta_pixels();
-				vector<int> alpha_points();
-				vector<int> beta_points();
+				vector<Pixel*> getAlphaPixels();
+				vector<Pixel*> getBetaPixels();
+				vector<int> getAlphaPoints();
+				vector<int> getBetaPoints();
 				void merge_node(Node* node);  // node may be a child
-				Nodes getPostOrderNodes(); //return all the node which stores in post order, equilivalent to m_root
-				Nodes getPreOrderNodes(); //return all the node which stores in post order, equilivalent to m_root
-				Nodes getBreadthFirstNodes(); //return all the node which stores in post order, equilivalent to m_root
-				int getTreeHeight();       // the distant from root, the root node with height 0
+				Nodes getPostOrderNodes() const; //return all the node which stores in post order, equilivalent to m_root
+				Nodes getPreOrderNodes() const; //return all the node which stores in post order, equilivalent to m_root
+				Nodes getBreadthFirstNodes() const; //return all the node which stores in post order, equilivalent to m_root
+				int getTreeHeight() const;       // the distant from root, the root node with height 0
 
-			public:
+				int getLabel() const;
+				int getLowestLevel() const;
+				int getHighestAlphaLevel() const;
+				int getHighestLevel() const;
+
+				int getAlphaSize() const;
+				int getBetaSize() const;
+				Node* getParent() const;
+
+			private:
 				int label;          // the store index in m_nodes, start from 0
 				int lowest_level;          // the lowest level
 				int highest_alpha_level;   // the highest alpha level
-				int highest_beta_level();    // the highest beta level
-				double mean_level();
-				vector<double> center();
 
 				int alpha_size;  // the pixel in the component exclude the pixels in child nodes
 				int beta_size;   // the total number of pixels 
@@ -95,7 +108,7 @@ class ComponentTree
 		Paths getPaths() const;
 
 		vector<int> getReverseAlphaMapping() const; //get the matrix of labels
-		int* getMatrix(vector<int> labels , vector<int> values, int ini_value) const; 
+		//int* getMatrix(vector<int> labels , vector<int> values, int ini_value) const; 
 		void setWeightMatrix(ComponentTree* tree2, vector<float> &weights);
 
 		int nodeNum() const;
