@@ -89,20 +89,29 @@ class CellTrack
 			void addCell(Cell* cell);
 			bool createFromImage(char* img_file);
 			void mergePrevFrame(Frame* prev_frame); // todo: consider NULL, free prev_frame
+			vector<int> getReverseAlphaMapping(); // used in mergePrevFrame
 			void linkPrevFrame(Frame* frame);  //  used when loading image files
-			int cellNum() const;
 			ComponentTree* getTree();
 			void setTree(ComponentTree*);
 			void setTreeFile(char* tree_file);
 
 			void releaseTree();
 			void releaseVertices();
-			void loadVertices(ComponentTree*);
+			void setVertices();
+			int cellNum() const;
+			int width() const;
+			int height() const;
+			int depth() const;
+			void setImageSize(); 
+			void setImageSize(int width, int height, int depth);
 
 		private:
 			ComponentTree* m_tree; // replaced by getTree
 			string m_tree_file;
 			vector<Cell*>  m_cells;
+			int m_width;
+			int m_height;
+			int m_depth;
 	};	
 
 	
@@ -132,7 +141,7 @@ class CellTrack
 
 	bool createFromTrees(vector<char*> tree_files);
 	bool createFromImages(vector<char*> img_files);
-	void exportImages(char* prefix) const;
+	void exportImages(char* prefix = NULL) const;
 	//CellTrack* choose(vector<Track*> & tracks);
 	//CellTrack* chooseOnly(vector<Track*> & tracks);
 	//CellTrack* remove(vector<Track*> & tracks);
@@ -157,14 +166,15 @@ class CellTrack
 	static bool createTracksFromFrames(Frames & frames, vector<Track*> &tracks );
 
 	private:
-	int m_width;
-	int m_height;
-	int m_depth;
+	//int m_width;       // in Frame::m_width
+	//int m_height;
+	//int m_depth;
 	//int m_startTime;   // 0 default, used when extractFramesand save
 	int m_numFrames;
 	int m_numTracks;
 	Frames m_frames;
 	Tracks m_tracks;
+	vector<char*> m_create_from_files;
 };
 
 #endif

@@ -122,6 +122,7 @@ bool CellTrack::reload(char* track_file)
 bool CellTrack::createFromImages(vector<char*> img_files)
 {
 	assert(m_frames.empty());
+	this->m_create_from_files = img_files;
 	return false;
 }
 
@@ -139,7 +140,7 @@ void CellTrack::exportImages(char* prefix) const
 	{
 		id++;
 		ostringstream oss(ostringstream::out);
-		oss << prefix;
+		if(prefix != NULL) oss << prefix;
 		oss << id;
 		oss << ".tiff";
 		//(*it)->exportImage(m_width,m_height,m_depth, (char*) oss.str().c_str());
@@ -200,7 +201,16 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 	int numVars1 = (int)tree1->nodeNum();
 	int numVars2 = (int)tree2->nodeNum();
 	assert((int)weights.size() == numVars1 * numVars2);
-
+	/*
+	for(int i = 0; i < numVars1; i++)
+	{
+		for(int j = 0; j < numVars2; j++)
+		{
+			cout<<weights[i*numVars2 + j]<<" ";
+		}
+		cout<<endl;
+	}
+*/
 	vector<vector<int> > paths1 = tree1->getPaths();
 	vector<vector<int> > paths2 = tree2->getPaths();
 
@@ -262,7 +272,7 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 	for(i=0;i< numVars1; i++)
 		for(j=0; j< numVars2; j++)
 		{
-			colno[k] = i*numVars2+j+1;
+			colno[k] = i*numVars2+j+1; //todo: why i*numVar2 + j + 1
 			row[k++] = weights[i * numVars2 + j];
 		}
 	if(!set_obj_fnex(lp, k, row, colno))return false;
@@ -282,16 +292,16 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 	frame1->setTree(tree1);
 	frame2->setTree(tree2);
 
-	for(int j = 0; j < numVars2; j++)
+	for(i = 0; i < numVars1; i++)
 	{
-		for(i = 0; i < numVars1; i++)
+		for(int j = 0; j < numVars2; j++)
 		{
-			if(fabs(row[i * numVars2 + j] - 1.0) < 0.001)
+			if(fabs(row[i * numVars2 + j] - 1.0) < 0.1)
 			{
 				Cell* cell1 = new Cell;
 				Cell* cell2 = new Cell;
-				cell1->setSecNode(tree1->getNode(i));
-				cell2->setFirNode(tree2->getNode(j));
+				cell1->setCurNode(tree1->getNode(i));
+				cell2->setCurNode(tree2->getNode(j));
 				cell1->setNextCell(cell2);
 				cell2->setPrevCell(cell1); 
 				frame1->addCell(cell1);
@@ -299,6 +309,9 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 			}
 		}
 	}
+	//cout<<"frame1 with "<<frame1->cellNum()<<" cells"<<endl;
+	//cout<<"frame2 with "<<frame2->cellNum()<<" cells"<<endl;
+
 	frames.push_back(frame1);
 	frames.push_back(frame2);
 
@@ -458,7 +471,14 @@ void CellTrack::Cell::setModNode(TNode* node)
 TNode* CellTrack::Cell::getNode(ComponentTree* tree) const
 {
 	if(m_mod_node_label != -1) return tree->getNode(m_mod_node_label);
-	else return tree->getNode(m_cur_node_label);
+	else if(m_cur_node_label != -1) return tree->getNode(m_cur_node_label);
+	else if(m_sec_node_label != -1 || m_fir_node_label != -1)
+	{
+		if(m_fir_node_label != -1) return tree->getNode(m_fir_node_label);
+		if(m_sec_node_label != -1) return tree->getNode(m_sec_node_label);
+	}
+	cerr<<"Cell::getNode error, no effective node label"<<endl;
+	return NULL;
 }
 
 CellTrack::Cell* CellTrack::Cell::getPrevCell() const
@@ -483,6 +503,10 @@ void CellTrack::Cell::setNextCell(CellTrack::Cell* next_cell)
 
 vector<int> CellTrack::Cell::getVertices() const
 {
+	if(m_vertices.empty())
+	{
+		cerr<<"Cell::getVertices: Unable to get vertices"<<endl;
+	}
 	return this->m_vertices;
 }
 
@@ -493,13 +517,17 @@ CellTrack::Frame::Frame()
 {
 	m_tree = NULL;
 	m_tree_file = "";
+	m_width = -1;
+	m_height = -1;
+	m_depth = -1;
 }
 
 void CellTrack::Frame::exportImage(int width, int height, int depth, char* img_file)
 {
-	cout<<"output image "<<img_file<<endl;
-	this->loadVertices(this->getTree());
-	srand(time(NULL));
+	cout<<"output image "<<img_file<<" with ";
+	cout<<this->cellNum()<<" cells"<<endl;
+	this->setVertices();
+	//srand(time(NULL));
 	int size = width * height * depth;
 	unsigned char* img = new unsigned char[size*3];
 	for(int i = 0; i < 3*size; i++) img[i] = 0;
@@ -507,9 +535,10 @@ void CellTrack::Frame::exportImage(int width, int height, int depth, char* img_f
 	while(it != m_cells.end())
 	{
 		vector<int> vertices = (*it)->getVertices();
-		unsigned char r = rand()%256;
-		unsigned char g = rand()%256;
-		unsigned char b = rand()%256;
+		assert(!vertices.empty());
+		unsigned char r = rand() % 256;
+		unsigned char g = rand() % 256;
+		unsigned char b = rand() % 256;
 		vector<int>::iterator itr = vertices.begin();
 		while(itr != vertices.end())
 		{
@@ -521,6 +550,7 @@ void CellTrack::Frame::exportImage(int width, int height, int depth, char* img_f
 		it++;
 	}
 	writetiff(img_file, img, 3, width, height, depth);
+	delete img;
 }
 
 void CellTrack::Frame::addCell(CellTrack::Cell* cell)
@@ -535,11 +565,56 @@ bool CellTrack::Frame::createFromImage(char* img_file)
 
 void CellTrack::Frame::mergePrevFrame(CellTrack::Frame* prev_frame)
 {
+	assert(prev_frame->getTree() == this->getTree());
+	vector<int> matrix1 = prev_frame->getReverseAlphaMapping();
+	vector<int> matrix2 = this->getReverseAlphaMapping();
+	map<int, Cell*> map1;
+	map<int, Cell*> map2;
+	vector<Cell*> cells1;
+	vector<Cell*> cells2;
+	cells1 = prev_frame->m_cells;
+	cells2 = this->m_cells;
+	vector<Cell*>::iterator it = cells1.begin();
+	while(it != cells1.end())
+	{
+		map1[(*it)->m_cur_node_label] = (*it);
+		it++;
+	}
+	it = cells2.begin();
+	while(it != cells2.end())
+	{
+		map2[(*it)->m_cur_node_label] = (*it);
+		it++;
+	}
+
 }
 
-int CellTrack::Frame::cellNum() const
-{
-	return m_cells.size();
+/***********************************************************************
+ * CellTrack::Frame::getReverseAlphaMappint(ComponentTree* tree)
+ * us m_cur_node_label to fill matrix
+ ***********************************************************************/
+vector<int> CellTrack::Frame::getReverseAlphaMapping()
+{	
+	ComponentTree* tree = this->getTree();
+	int size = tree->pixelNum();
+	vector<int> matrix(size, -1);
+	vector<Cell*>::iterator it = m_cells.begin();
+	while(it != m_cells.end())
+	{
+		//int label = (*it)->getCurNode(tree)->getLabel();
+		int label = (*it)->m_cur_node_label;
+		vector<int> vertices;
+		if((*it)->m_vertices.empty()) vertices =  (*it)->getNode(tree)->getBetaPoints();
+		else vertices = (*it)->getVertices();
+		vector<int>::iterator itr = vertices.begin();
+		while(itr != vertices.end())
+		{
+			matrix[*itr] = label;
+			itr++;
+		}
+		it++;
+	}
+	return matrix;
 }
 
 ComponentTree* CellTrack::Frame::getTree()
@@ -587,8 +662,9 @@ void CellTrack::Frame::releaseVertices()
 	}
 }
 
-void CellTrack::Frame::loadVertices(ComponentTree* tree)
+void CellTrack::Frame::setVertices()
 {
+	ComponentTree* tree = this->getTree();
 	vector<Cell*>::iterator it = m_cells.begin();
 	while(it != m_cells.end())
 	{
@@ -598,6 +674,44 @@ void CellTrack::Frame::loadVertices(ComponentTree* tree)
 		}
 		it++;
 	}
+}
+
+int CellTrack::Frame::cellNum() const
+{
+	return m_cells.size();
+}
+
+int CellTrack::Frame::width() const
+{
+	assert(m_width > 0);
+	return m_width;
+}
+
+int CellTrack::Frame::height() const
+{
+	assert(m_height > 0);
+	return m_height;
+}
+
+int CellTrack::Frame::depth() const
+{
+	assert(m_height > 0);
+	return m_depth;
+}
+
+void CellTrack::Frame::setImageSize()
+{
+	ComponentTree* tree = this->getTree();
+	m_width = tree->width();
+	m_height = tree->height();
+	m_depth = tree->depth();
+}
+
+void CellTrack::Frame::setImageSize(int width, int height, int depth)
+{
+	m_width = width;
+	m_height = height;
+	m_depth = depth;
 }
 
 CellTrack::Track::Track()

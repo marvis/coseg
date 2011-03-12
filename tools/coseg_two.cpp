@@ -8,5 +8,5 @@ int main(int argc, char* argv[])
 	tree_files.push_back(argv[1]);
 	tree_files.push_back(argv[2]);
 	cell_track.createFromTrees(tree_files);
-	cell_track.exportImages("mytest");
+	cell_track.exportImages("coseg_out");
 }

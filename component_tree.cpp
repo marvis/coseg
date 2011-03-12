@@ -830,13 +830,13 @@ bool ComponentTree::load(const char* treefile)
 	string str_file(treefile);
 	if(str_file.find(".bin") != string::npos)
 	{
-		cout<<"load binary file: "<<treefile<<endl;
+		cout<<"load binary tree file: "<<treefile<<endl;
 		saveType = false;
 		ifs.open(treefile, ios_base::in|ios_base::binary);
 	}
 	else if(str_file.find(".txt") != string::npos)
 	{
-		cout<<"load txt file: "<<treefile<<endl;
+		cout<<"load txt tree file: "<<treefile<<endl;
 		saveType = true;
 		ifs.open(treefile);
 	}
@@ -1172,29 +1172,39 @@ void ComponentTree::setWeightMatrix(ComponentTree* tree2, vector<float> &weights
 	weights.resize(rows*cols);
 	for(int i=0; i < rows*cols; i++) weights[i]=0.0;
 	vector<int> matrix1 = this->getReverseAlphaMapping();
-	vector<int> matrix2 = this->getReverseAlphaMapping();
+	vector<int> matrix2 = tree2->getReverseAlphaMapping();
 	int pixel_num = this->m_numPixels;
 	for(int i = 0; i < pixel_num; i++)
 	{
 		int label1 = matrix1[i];
 		int label2 = matrix2[i];
-		weights[label1 * cols + label2]++;
+		weights[label1 * cols + label2] = weights[label1 * cols + label2] + 1.0;
 	}
+/*
 	for(int i = 0; i < rows; i++)
 	{
 		for(int j = 0; j < cols; j++)
 		{
-		        ComponentTree::Node* node2 = tree2->getNode(j);
-                        if(! node2->childs.empty())
-                        {
-                                vector<Node*>::iterator it = node2->childs.begin();
-                                while( it != node2->childs.end())
-                                {
-                                        int jj = (*it)->label;
-                                        weights[i*cols + j] += weights[i*cols + jj];
-                                        it++;
-                                }
-                        }
+			cout<<weights[i*cols + j]<<" ";
+		}
+		cout<<endl;
+	}
+*/
+	for(int i = 0; i < rows; i++)
+	{
+		for(int j = 0; j < cols; j++)
+		{
+			ComponentTree::Node* node2 = tree2->getNode(j);
+			if(! node2->childs.empty())
+			{
+				vector<Node*>::iterator it = node2->childs.begin();
+				while( it != node2->childs.end())
+				{
+					int jj = (*it)->label;
+					weights[i*cols + j] += weights[i*cols + jj];
+					it++;
+				}
+			}
 
 		}
 	}
@@ -1223,6 +1233,8 @@ void ComponentTree::setWeightMatrix(ComponentTree* tree2, vector<float> &weights
 		{
 			float intersection = weights[i* cols + j];
 			float joint = this->getNode(i)->beta_size + tree2->getNode(j)->beta_size - intersection;
+			//if(intersection >= joint) cout<<"intersection "<<intersection<<"  joint "<<joint<<endl;
+			assert(intersection <= joint);
 			weights[i*cols + j] = intersection/joint;
 		}
 	}
@@ -1244,7 +1256,7 @@ void ComponentTree::printReverseAlphaMapping() const
 		sprintf(format,"%s%d%dd ","%",0,w);
 	}
 
-        while(i < m_numPixels)
+	while(i < m_numPixels)
 	{
 		char out[10];
 		sprintf(out,format,matrix[i]);
@@ -1287,55 +1299,55 @@ void ComponentTree::printPaths() const
 
 DisjointSets::DisjointSets()
 {
-        m_numPixels = 0;
+	m_numPixels = 0;
 	m_numSets = 0;
 }
 
 DisjointSets::DisjointSets(int count)
 {
-        m_numPixels = 0;
+	m_numPixels = 0;
 	m_numSets = 0;
 	AddPixels(count);
 }
 
 DisjointSets::DisjointSets(const DisjointSets & s)
 {
-        this->m_numPixels = s.m_numPixels;
+	this->m_numPixels = s.m_numPixels;
 	this->m_numSets = s.m_numSets;
-	
+
 	// Copy nodes
-        m_nodes.resize(m_numPixels);
-        for(int i = 0; i < m_numPixels; ++i)
+	m_nodes.resize(m_numPixels);
+	for(int i = 0; i < m_numPixels; ++i)
 		m_nodes[i] = new Node(*s.m_nodes[i]);
-	
+
 	// Update parent pointers to point to newly created nodes rather than the old ones
-        for(int i = 0; i < m_numPixels; ++i)
+	for(int i = 0; i < m_numPixels; ++i)
 		if(m_nodes[i]->parent != NULL)
 			m_nodes[i]->parent = m_nodes[s.m_nodes[i]->parent->index];
 }
 
 DisjointSets::~DisjointSets()
 {
-        for(int i = 0; i < m_numPixels; ++i)
+	for(int i = 0; i < m_numPixels; ++i)
 		delete m_nodes[i];
 	m_nodes.clear();
-        m_numPixels = 0;
+	m_numPixels = 0;
 	m_numSets = 0;
 }
 
 // Note: some internal data is modified for optimization even though this method is consant.
 int DisjointSets::FindSet(int pixelId) const
 {
-        assert(pixelId < m_numPixels);
-	
+	assert(pixelId < m_numPixels);
+
 	Node* curNode;
-	
+
 	// Find the root pixel that represents the set which `pixelId` belongs to
 	curNode = m_nodes[pixelId];
 	while(curNode->parent != NULL)
 		curNode = curNode->parent;
 	Node* root = curNode;
-	
+
 	// Walk to the root, updating the parents of `pixelId`. Make those pixels the direct
 	// children of `root`. This optimizes the tree for future FindSet invokations.
 	curNode = m_nodes[pixelId];
@@ -1345,21 +1357,21 @@ int DisjointSets::FindSet(int pixelId) const
 		curNode->parent = root;
 		curNode = next;
 	}
-	
+
 	return root->index;
 }
 
 int DisjointSets::Union(int setId1, int setId2)
 {
-        assert(setId1 < m_numPixels);
-        assert(setId2 < m_numPixels);
-	
+	assert(setId1 < m_numPixels);
+	assert(setId2 < m_numPixels);
+
 	if(setId1 == setId2)
 		return FindSet(setId1); // already unioned
-	
+
 	Node* set1 = m_nodes[setId1];
 	Node* set2 = m_nodes[setId2];
-	
+
 	// Determine which node representing a set has a higher rank. The node with the higher rank is
 	// likely to have a bigger subtree so in order to better balance the tree representing the
 	// union, the node with the higher rank is made the parent of the one with the lower rank and
@@ -1377,7 +1389,7 @@ int DisjointSets::Union(int setId1, int setId2)
 		set2->parent = set1;
 		++set1->rank; // update rank
 	}
-	
+
 	// Since two sets have fused into one, there is now one less set so update the set count.
 	--m_numSets;
 	return FindSet(setId1);
@@ -1386,25 +1398,25 @@ int DisjointSets::Union(int setId1, int setId2)
 void DisjointSets::AddPixels(int numToAdd)
 {
 	assert(numToAdd >= 0);
-	
+
 	// insert and initialize the specified number of pixel nodes to the end of the `m_nodes` array
 	m_nodes.insert(m_nodes.end(), numToAdd, (Node*)NULL);
-        for(int i = m_numPixels; i < m_numPixels + numToAdd; ++i)
+	for(int i = m_numPixels; i < m_numPixels + numToAdd; ++i)
 	{
 		m_nodes[i] = new Node();
 		m_nodes[i]->parent = NULL;
 		m_nodes[i]->index = i;
 		m_nodes[i]->rank = 0;
 	}
-	
+
 	// update pixel and set counts
-        m_numPixels += numToAdd;
+	m_numPixels += numToAdd;
 	m_numSets += numToAdd;
 }
 
 int DisjointSets::NumPixels() const
 {
-        return m_numPixels;
+	return m_numPixels;
 }
 
 int DisjointSets::NumSets() const
