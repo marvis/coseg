@@ -144,7 +144,7 @@ void CellTrack::exportImages(char* prefix) const
 		oss << id;
 		oss << ".tiff";
 		//(*it)->exportImage(m_width,m_height,m_depth, (char*) oss.str().c_str());
-		(*it)->exportImage(156, 250, 34, (char*) oss.str().c_str());
+		(*it)->exportImage((char*) oss.str().c_str());
 		it++;
 	}
 }
@@ -309,8 +309,6 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 			}
 		}
 	}
-	//cout<<"frame1 with "<<frame1->cellNum()<<" cells"<<endl;
-	//cout<<"frame2 with "<<frame2->cellNum()<<" cells"<<endl;
 
 	frames.push_back(frame1);
 	frames.push_back(frame2);
@@ -335,10 +333,8 @@ bool CellTrack::createFramesFromTrees(vector<char*> tree_files,vector<CellTrack:
 		assert(frames.size() == 2);
 		Frame* frame1 = frames[0];
 		Frame* frame2 = frames[1];
-		frame1->setTreeFile(tree_files[0]);
-		//frame1->releaseTree();
-		frame2->setTreeFile(tree_files[1]);
-		//frame2->releaseTree();
+		frame1->releaseTree(tree_files[0]);
+		frame2->releaseTree(tree_files[1]);
 		return rt;
 	}
 
@@ -365,11 +361,11 @@ bool CellTrack::createFramesFromTrees(vector<char*> tree_files,vector<CellTrack:
 
 		frames[i] = two_frames[0];
 		frames[i]->mergePrevFrame(prev_frame);
-		frames[i]->releaseTree();          // if space is not enough
+		frames[i]->releaseTree(tree_files[i]);          // if space is not enough
 		prev_frame = two_frames[1];
 	}
 	frames[i] = prev_frame;
-	frames[i]->releaseTree();
+	frames[i]->releaseTree(tree_files[i]);
 	return true;
 }
 
@@ -501,13 +497,15 @@ void CellTrack::Cell::setNextCell(CellTrack::Cell* next_cell)
 	m_next_cell = next_cell;
 }
 
-vector<int> CellTrack::Cell::getVertices() const
+vector<int> CellTrack::Cell::getVertices(ComponentTree* tree) const
 {
-	if(m_vertices.empty())
+	if(m_vertices.empty() && tree == NULL)
 	{
 		cerr<<"Cell::getVertices: Unable to get vertices"<<endl;
 	}
-	return this->m_vertices;
+	if(tree == NULL) return this->m_vertices;
+	if(m_vertices.empty()) return this->getNode(tree)->getBetaPoints();
+	return m_vertices;
 }
 
 /***************************************************************************
@@ -522,8 +520,11 @@ CellTrack::Frame::Frame()
 	m_depth = -1;
 }
 
-void CellTrack::Frame::exportImage(int width, int height, int depth, char* img_file)
+void CellTrack::Frame::exportImage(char* img_file)
 {
+	int width = this->width();
+	int height = this->height();
+	int depth = this->depth();
 	cout<<"output image "<<img_file<<" with ";
 	cout<<this->cellNum()<<" cells"<<endl;
 	this->setVertices();
@@ -534,7 +535,7 @@ void CellTrack::Frame::exportImage(int width, int height, int depth, char* img_f
 	vector<Cell*>::iterator it = m_cells.begin();
 	while(it != m_cells.end())
 	{
-		vector<int> vertices = (*it)->getVertices();
+		vector<int> vertices = (*it)->getVertices((ComponentTree*)NULL);
 		assert(!vertices.empty());
 		unsigned char r = rand() % 256;
 		unsigned char g = rand() % 256;
@@ -565,35 +566,87 @@ bool CellTrack::Frame::createFromImage(char* img_file)
 
 void CellTrack::Frame::mergePrevFrame(CellTrack::Frame* prev_frame)
 {
+	if(prev_frame == NULL) return;
 	assert(prev_frame->getTree() == this->getTree());
-	vector<int> matrix1 = prev_frame->getReverseAlphaMapping();
-	vector<int> matrix2 = this->getReverseAlphaMapping();
-	map<int, Cell*> map1;
-	map<int, Cell*> map2;
-	vector<Cell*> cells1;
-	vector<Cell*> cells2;
-	cells1 = prev_frame->m_cells;
-	cells2 = this->m_cells;
+	ComponentTree* tree = getTree();
+	int size = this->width() * this->height() * this->depth();
+	vector<int> matrix1(size, -1);
+	vector<int> matrix2(size, -1);
+	vector<Cell*> cells1 = prev_frame->m_cells;
+;
+	vector<Cell*> cells2 = this->m_cells;
 	vector<Cell*>::iterator it = cells1.begin();
+	int id = 0;
 	while(it != cells1.end())
 	{
-		map1[(*it)->m_cur_node_label] = (*it);
+		vector<int> vertices = (*it)->getVertices(tree);
+        vector<int>::iterator itr = vertices.begin();
+        while(itr != vertices.end())
+        {
+            matrix1[*itr] = id;
+            itr++;
+        }
+		id++;
 		it++;
 	}
 	it = cells2.begin();
+	id = 0;
 	while(it != cells2.end())
 	{
-		map2[(*it)->m_cur_node_label] = (*it);
+		vector<int> vertices = (*it)->getVertices(tree);
+        vector<int>::iterator itr = vertices.begin();
+        while(itr != vertices.end())
+        {
+            matrix2[*itr] = id;
+            itr++;
+        }
+		id++;
 		it++;
 	}
-
+	int cells1Num = cells1.size();
+	int cells2Num = cells2.size();
+	vector<bool> weight(cells1Num*cells2Num, 0);
+	for(int i = 0; i < size; i++)
+	{
+		int id1 = matrix1[i];
+		int id2 = matrix2[i];
+		if(id1 != -1 && id2 != -1) weight[id1*cells2Num + id2] = true;
+	}
+	for(int i = 0; i < cells1Num; i++)
+	{
+		int sum = 0;
+		int the_j = -1;
+		for(int j = 0; j < cells2Num; j++) 
+		{
+			sum += weight[i*cells2Num + j];
+			if(weight[i*cells2Num + j] && the_j == -1) the_j = j;
+		}
+		assert(sum <= 1);
+		if(sum)
+		{
+			assert(tree != NULL);
+			cells2[the_j]->setFirNode(cells1[i]->getCurNode(tree));
+			cells2[the_j]->setSecNode(cells2[the_j]->getCurNode(tree));	
+			int cur_label = cells1[i]->m_cur_node_label > cells2[the_j]->m_cur_node_label ? cells1[i]->m_cur_node_label:  cells2[the_j]->m_cur_node_label;
+			cells2[the_j]->setCurNode(tree->getNode(cur_label));
+			Cell* prev_cell = cells1[i]->getPrevCell();
+			cells2[the_j]->setPrevCell(prev_cell);
+			prev_cell->setNextCell(cells2[the_j]);
+			delete cells1[i];
+		}
+		else
+		{
+			m_cells.push_back(cells1[i]);
+		}
+	}
+	delete prev_frame;
 }
 
 /***********************************************************************
  * CellTrack::Frame::getReverseAlphaMappint(ComponentTree* tree)
  * us m_cur_node_label to fill matrix
  ***********************************************************************/
-vector<int> CellTrack::Frame::getReverseAlphaMapping()
+/*vector<int> CellTrack::Frame::getReverseAlphaMapping()
 {	
 	ComponentTree* tree = this->getTree();
 	int size = tree->pixelNum();
@@ -616,14 +669,18 @@ vector<int> CellTrack::Frame::getReverseAlphaMapping()
 	}
 	return matrix;
 }
-
+*/
 ComponentTree* CellTrack::Frame::getTree()
 {
 	if(m_tree != NULL) return m_tree;
-	else if(m_tree_file.empty()) return new ComponentTree((char*) m_tree_file.c_str());
+	else if(!m_tree_file.empty())
+	{
+		m_tree = new ComponentTree((char*) m_tree_file.c_str());
+		return m_tree;
+	}
 	else 
 	{
-		cerr<<"Frame::getTree() unable to get component tree"<<endl;
+		cerr<<"Frame::getTree() unable to get component tree "<<m_tree_file.c_str()<<endl;
 		return NULL;
 	}
 }
@@ -632,15 +689,15 @@ void CellTrack::Frame::setTree(ComponentTree* tree)
 {
 	assert(tree != NULL);
 	m_tree = tree;
+	m_width = tree->width();
+	m_height = tree->height();
+	m_depth = tree->depth();
 }
 
-void CellTrack::Frame::setTreeFile(char* tree_file)
+void CellTrack::Frame::releaseTree(char* tree_file)
 {
-	m_tree_file = tree_file;
-}
-
-void CellTrack::Frame::releaseTree()
-{
+	m_tree_file = string(tree_file);
+	cout<<"release tree "<< tree_file<<endl;
 	if(m_tree != NULL) 
 	{
 		m_tree->clear();
@@ -665,6 +722,7 @@ void CellTrack::Frame::releaseVertices()
 void CellTrack::Frame::setVertices()
 {
 	ComponentTree* tree = this->getTree();
+	assert(tree != NULL);
 	vector<Cell*>::iterator it = m_cells.begin();
 	while(it != m_cells.end())
 	{
@@ -699,21 +757,6 @@ int CellTrack::Frame::depth() const
 	return m_depth;
 }
 
-void CellTrack::Frame::setImageSize()
-{
-	ComponentTree* tree = this->getTree();
-	m_width = tree->width();
-	m_height = tree->height();
-	m_depth = tree->depth();
-}
-
-void CellTrack::Frame::setImageSize(int width, int height, int depth)
-{
-	m_width = width;
-	m_height = height;
-	m_depth = depth;
-}
-
 CellTrack::Track::Track()
 {
 }
@@ -742,5 +785,3 @@ int CellTrack::Track::cellNum() const
 {
 	return m_cells.size();
 }
-
-

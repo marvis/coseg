@@ -426,7 +426,7 @@ ComponentTree::Node* ComponentTree::Node::getParent() const
 ComponentTree::ComponentTree()
 {
 	m_root = NULL;
-        m_numPixels = 0;
+    m_numPixels = 0;
 	m_numNodes = 0;
 	m_numLeafs = 0;
 }
@@ -443,6 +443,10 @@ ComponentTree::ComponentTree(char * imgfile, int _minSize, int _maxSize, int _si
  ********************************************************************/
 ComponentTree::ComponentTree(char* treefile)
 {
+	m_root = NULL;
+	m_numPixels = 0;
+	m_numNodes = 0;
+	m_numLeafs = 0;
 	load(treefile);
 }
 
@@ -820,7 +824,8 @@ bool ComponentTree::reload(const char* treefile)
 
 bool ComponentTree::load(const char* treefile)
 {
-	if(this->m_numNodes != 0 && this->m_numPixels != 0)
+	assert(this->m_numNodes == 0 && this->m_numPixels == 0);
+	if(this->m_numNodes != 0 || this->m_numPixels != 0)
 	{
 		cerr<<"Load error: Please clear the data first"<<endl;
 		return false;
@@ -842,7 +847,7 @@ bool ComponentTree::load(const char* treefile)
 	}
 	else 
 	{
-		cerr<<"Load Tree File: Cann't analysis file type."<<endl;
+		cerr<<"Load Tree File: Cann't analysis tree file: "<<treefile<<endl;
 		cerr<<"Make sure .bin.tree file as binary and .txt.tree file as txt file"<<endl;
 		return false;
 	}

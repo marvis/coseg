@@ -67,7 +67,7 @@ class CellTrack
 			Cell* getNextCell() const;
 			void  setNextCell(Cell*);
 
-			vector<int> getVertices() const;
+			vector<int> getVertices(ComponentTree*) const;
 		private:
 			int m_fir_node_label;                    // the first alignment result
 			int m_sec_node_label;                    // the second alignment result
@@ -85,25 +85,25 @@ class CellTrack
 	{
 		public:
 			Frame();
-			void exportImage(int width, int height, int depth, char* img_file);
+			void exportImage(char* img_file);
 			void addCell(Cell* cell);
 			bool createFromImage(char* img_file);
 			void mergePrevFrame(Frame* prev_frame); // todo: consider NULL, free prev_frame
-			vector<int> getReverseAlphaMapping(); // used in mergePrevFrame
+			//vector<int> getReverseAlphaMapping(); // used in mergePrevFrame
 			void linkPrevFrame(Frame* frame);  //  used when loading image files
 			ComponentTree* getTree();
 			void setTree(ComponentTree*);
-			void setTreeFile(char* tree_file);
+			//void setTreeFile(char* tree_file);
 
-			void releaseTree();
+			void releaseTree(char*);
 			void releaseVertices();
 			void setVertices();
 			int cellNum() const;
 			int width() const;
 			int height() const;
 			int depth() const;
-			void setImageSize(); 
-			void setImageSize(int width, int height, int depth);
+			//void setImageSize(); 
+			//void setImageSize(int width, int height, int depth);
 
 		private:
 			ComponentTree* m_tree; // replaced by getTree
