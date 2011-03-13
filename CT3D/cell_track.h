@@ -9,13 +9,15 @@
 #ifndef CELL_TRACK_H_H
 #define CELL_TRACK_H_H
 
+#include "../component_tree.h"
+#include "palette.h"
+
 #include <vector>
 #include <set>
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <map>
-#include "../component_tree.h"
 
 using namespace std;
 
@@ -36,6 +38,8 @@ class CellTrack
 	{
 		public:
 			friend class Frame;
+			friend class Track;
+			friend class CellTrack;
 		public:
 			Cell();
 			Track* getTrack() const;
@@ -68,6 +72,7 @@ class CellTrack
 			void  setNextCell(Cell*);
 
 			vector<int> getVertices(ComponentTree*) const;
+
 		private:
 			int m_fir_node_label;                    // the first alignment result
 			int m_sec_node_label;                    // the second alignment result
@@ -84,13 +89,18 @@ class CellTrack
 	class Frame
 	{
 		public:
+			friend class Cell;
+			friend class Track;
+		public:
 			Frame();
-			void exportImage(char* img_file);
+			void exportImage(char* img_file, Palette& palette);
 			void addCell(Cell* cell);
 			bool createFromImage(char* img_file);
+
 			void mergePrevFrame(Frame* prev_frame); // todo: consider NULL, free prev_frame
 			//vector<int> getReverseAlphaMapping(); // used in mergePrevFrame
 			void linkPrevFrame(Frame* frame);  //  used when loading image files
+
 			ComponentTree* getTree();
 			void setTree(ComponentTree*);
 			//void setTreeFile(char* tree_file);
@@ -99,11 +109,12 @@ class CellTrack
 			void releaseVertices();
 			void setVertices();
 			int cellNum() const;
+
+			vector<Cell*> getCells() const;
+
 			int width() const;
 			int height() const;
 			int depth() const;
-			//void setImageSize(); 
-			//void setImageSize(int width, int height, int depth);
 
 		private:
 			ComponentTree* m_tree; // replaced by getTree
@@ -118,16 +129,19 @@ class CellTrack
 	class Track
 	{
 		public:
+			friend class CellTrack;
+		public:
 			Track();
-			Cell* getStart() const;
-			Cell* getEnd() const;
+			Cell* getStartCell() const;
+			int getColorId() const;
 			void addNext(Cell* cell);
 			vector<Cell*> getCells() const;
 			int cellNum() const;
 		private:
 			int m_start_time;        // 0 for the first time
-			vector<Cell*> m_cells;
-			int m_colorId;
+			//vector<Cell*> m_cells;
+			Cell* m_entry_cell;
+			int m_color_id;
 	};
 
 	public:
@@ -163,7 +177,7 @@ class CellTrack
 	static bool createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2,vector<Frame*> &frames );
 	static bool createFramesFromTrees(vector<char*> tree_files,vector<Frame*> &frames);
 	static bool createFramesFromImages(vector<char*> img_files,vector<Frame*> &frames );
-	static bool createTracksFromFrames(Frames & frames, vector<Track*> &tracks );
+	static bool createTracksFromFrames(Frames & frames, vector<Track*> &tracks,int start_time = 0 );
 
 	private:
 	//int m_width;       // in Frame::m_width
@@ -176,5 +190,6 @@ class CellTrack
 	Tracks m_tracks;
 	vector<char*> m_create_from_files;
 };
+
 
 #endif

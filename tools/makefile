@@ -5,8 +5,8 @@ CXXFLAGS = -ltiff
 
 OBJ_CREATE = ../myalgorithms.o ../component_tree.o  create_tree.o
 OBJ_VIEW = ../myalgorithms.o ../component_tree.o  view_tree.o
-OBJ_COSEG_TWO = ../myalgorithms.o ../component_tree.o ../CT3D/cell_track.o coseg_two.o
-OBJ_COSEG_MORE = ../myalgorithms.o ../component_tree.o ../CT3D/cell_track.o coseg_more.o
+OBJ_COSEG_TWO = ../myalgorithms.o ../component_tree.o ../CT3D/cell_track.o ../CT3D/palette.o coseg_two.o
+OBJ_COSEG_MORE = ../myalgorithms.o ../component_tree.o ../CT3D/cell_track.o ../CT3D/palette.o coseg_more.o
 
 coseg_more:$(OBJ_COSEG_MORE)
 	$(CXX) $(CXXFLAGS) -llpsolve55 $(OBJ_COSEG_MORE) -o coseg_more

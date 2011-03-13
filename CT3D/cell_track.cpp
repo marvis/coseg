@@ -1,3 +1,8 @@
+#include "cell_track.h"
+#include "palette.h"
+#include "../component_tree.h"
+#include "../myalgorithms.h"
+
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -8,10 +13,6 @@
 #include <cstdio>
 #include <cstring>
 #include "lp_lib.h"
-
-#include "../component_tree.h"
-#include "cell_track.h"
-#include "../myalgorithms.h"
 
 using namespace std;
 typedef ComponentTree::Node TNode;
@@ -123,19 +124,31 @@ bool CellTrack::createFromImages(vector<char*> img_files)
 {
 	assert(m_frames.empty());
 	this->m_create_from_files = img_files;
-	return false;
+	return true;
 }
 
 bool CellTrack::createFromTrees(vector<char*> tree_files)
 {
 	assert(m_frames.empty());
-	return createFramesFromTrees(tree_files, m_frames);
+	if(!createFramesFromTrees(tree_files, m_frames))
+	{
+		cerr<<"unable to create frames from trees "<<endl;
+		return false;
+	}
+	if(!createTracksFromFrames(m_frames, m_tracks))
+	{
+		cerr<<"unable to create tracks from frames"<<endl;
+		return false;
+	}
+	return true;
 }
 
 void CellTrack::exportImages(char* prefix) const
 {
 	vector<Frame*>::const_iterator it = m_frames.begin();
 	int id = 0;
+	int color_num = this->trackNum();
+	Palette palette(color_num);
 	while(it != m_frames.end())
 	{
 		id++;
@@ -143,8 +156,7 @@ void CellTrack::exportImages(char* prefix) const
 		if(prefix != NULL) oss << prefix;
 		oss << id;
 		oss << ".tiff";
-		//(*it)->exportImage(m_width,m_height,m_depth, (char*) oss.str().c_str());
-		(*it)->exportImage((char*) oss.str().c_str());
+		(*it)->exportImage((char*) oss.str().c_str(), palette);
 		it++;
 	}
 }
@@ -375,9 +387,38 @@ bool CellTrack::createFramesFromImages(vector<char*> img_files, vector<CellTrack
 }
 
 
-bool CellTrack::createTracksFromFrames(CellTrack::Frames& frames, vector<CellTrack::Track*> &tracks)
+bool CellTrack::createTracksFromFrames(CellTrack::Frames& frames, vector<CellTrack::Track*> &tracks, int start_time)
 {
-	return false;
+	assert(!frames.empty());
+	assert(tracks.empty());
+	vector<Frame*>::iterator it = frames.begin();
+	int t = start_time;
+	int color_id = 0;
+	while(it != frames.end())
+	{
+		vector<Cell*> cells = (*it)->getCells();
+		vector<Cell*>::iterator itr = cells.begin();
+		while(itr != cells.end())
+		{
+			if((*itr)->getPrevCell() == NULL)
+			{
+				Track* track = new Track;
+				track->m_start_time = t;
+				track->m_entry_cell = (*itr);
+				track->m_color_id = color_id++;
+				(*itr)->m_track = track;
+				tracks.push_back(track);
+			}
+			else
+			{
+				(*itr)->m_track = (*itr)->getPrevCell()->getTrack();
+			}
+			itr++;
+		}
+		it++;
+		t++;
+	}
+	return true;
 }
 /**************************************************************************
  * static functions
@@ -397,6 +438,10 @@ CellTrack::Cell::Cell()
 
 CellTrack::Track* CellTrack::Cell::getTrack() const
 {
+	if(m_track == NULL)
+	{
+		cerr<<"Cell::getTrack null track"<<endl;
+	}
 	return m_track;
 }
 
@@ -520,7 +565,7 @@ CellTrack::Frame::Frame()
 	m_depth = -1;
 }
 
-void CellTrack::Frame::exportImage(char* img_file)
+void CellTrack::Frame::exportImage(char* img_file, Palette& palette)
 {
 	int width = this->width();
 	int height = this->height();
@@ -537,9 +582,10 @@ void CellTrack::Frame::exportImage(char* img_file)
 	{
 		vector<int> vertices = (*it)->getVertices((ComponentTree*)NULL);
 		assert(!vertices.empty());
-		unsigned char r = rand() % 256;
-		unsigned char g = rand() % 256;
-		unsigned char b = rand() % 256;
+		int color_id = (*it)->getTrack()->getColorId();
+		unsigned char r = palette(color_id).r; //rand() % 256;
+		unsigned char g = palette(color_id).g; //rand() % 256;
+		unsigned char b = palette(color_id).b; //rand() % 256;
 		vector<int>::iterator itr = vertices.begin();
 		while(itr != vertices.end())
 		{
@@ -739,6 +785,11 @@ int CellTrack::Frame::cellNum() const
 	return m_cells.size();
 }
 
+vector<CellTrack::Cell*> CellTrack::Frame::getCells() const
+{
+	return m_cells;
+}
+
 int CellTrack::Frame::width() const
 {
 	assert(m_width > 0);
@@ -759,29 +810,48 @@ int CellTrack::Frame::depth() const
 
 CellTrack::Track::Track()
 {
+	m_start_time = -1;
+	m_entry_cell = NULL;
+	m_color_id = -1;
 }
 
-CellTrack::Cell* CellTrack::Track::getStart() const
+CellTrack::Cell* CellTrack::Track::getStartCell() const
 {
-	return m_cells[0]; 
+	return m_entry_cell;
 }
 
-CellTrack::Cell* CellTrack::Track::getEnd() const
+int CellTrack::Track::getColorId() const
 {
-	return *(m_cells.rbegin());
+	assert(m_color_id != -1);
+	return m_color_id;
 }
 
 void CellTrack::Track::addNext(Cell* cell)
 {
-	m_cells.push_back(cell);
+	//m_cells.push_back(cell);
 }
 
 vector<CellTrack::Cell*> CellTrack::Track::getCells() const
 {
-	return m_cells;
+	vector<Cell*> cells;
+	Cell* p = m_entry_cell;
+	while(p != NULL)
+	{
+		cells.push_back(p);
+		p = p->getNextCell();
+	}
+	return cells;
 }
 
 int CellTrack::Track::cellNum() const
 {
-	return m_cells.size();
+	int cell_num = 1;
+
+	Cell* p = m_entry_cell;
+	while(p->getNextCell() != NULL) 
+	{
+		cell_num++;
+		p = p->getNextCell();
+	}
+	return cell_num;
 }
