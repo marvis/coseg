@@ -1,5 +1,5 @@
-#include "../component_tree.h"
-#include "../myalgorithms.h"
+#include "src/component_tree.h"
+#include "src/myalgorithms.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

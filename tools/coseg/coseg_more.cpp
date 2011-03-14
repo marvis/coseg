@@ -1,4 +1,4 @@
-#include "../CT3D/cell_track.h"
+#include "src/CT3D/cell_track.h"
 #include <vector>
 #include <string>
 int main(int argc, char* argv[])
@@ -10,5 +10,5 @@ int main(int argc, char* argv[])
 		tree_files.push_back(argv[i]);
 	}
 	cell_track.createFromTrees(tree_files);
-	cell_track.exportImages((char*)"coseg_more");
+	cell_track.exportImages((char*)"cosegmore_out");
 }
