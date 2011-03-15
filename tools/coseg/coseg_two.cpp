@@ -1,4 +1,4 @@
-#include "../CT3D/cell_track.h"
+#include "src/CT3D/cell_track.h"
 #include <vector>
 #include <string>
 int main(int argc, char* argv[])

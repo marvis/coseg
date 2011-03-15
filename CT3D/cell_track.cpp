@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <string>
+#include <map>
 #include <fstream>
 #include <sstream>
 #include <cassert>
@@ -123,7 +124,18 @@ bool CellTrack::reload(char* track_file)
 bool CellTrack::createFromImages(vector<char*> img_files)
 {
 	assert(m_frames.empty());
-	this->m_create_from_files = img_files;
+	assert(!img_files.empty());
+	if(! createFramesFromImages(img_files, m_frames))
+	{
+		cerr<<"unable to create frames from images "<<endl;
+		return false;
+	}
+	if(! createTracksFromFrames(m_frames, m_tracks))
+	{
+		cerr<<"unable to create tracks from frames"<<endl;
+		return false;
+	}
+	this->m_img_files = img_files;
 	return true;
 }
 
@@ -140,6 +152,7 @@ bool CellTrack::createFromTrees(vector<char*> tree_files)
 		cerr<<"unable to create tracks from frames"<<endl;
 		return false;
 	}
+	m_tree_files = tree_files;
 	return true;
 }
 
@@ -383,7 +396,17 @@ bool CellTrack::createFramesFromTrees(vector<char*> tree_files,vector<CellTrack:
 
 bool CellTrack::createFramesFromImages(vector<char*> img_files, vector<CellTrack::Frame*> &frames)
 {
-	return false;
+	assert(!img_files.empty());
+	assert(frames.empty());
+	int frame_num = img_files.size();
+	frames.resize(frame_num);
+	map<int, Cell*> map_cell;
+	for(int i = 0;i < frame_num; i++)
+	{
+		frames[i] = new Frame;
+		map_cell = frames[i]->createFromImage(img_files[i], map_cell);
+	}
+	return true;
 }
 
 
@@ -405,7 +428,7 @@ bool CellTrack::createTracksFromFrames(CellTrack::Frames& frames, vector<CellTra
 				Track* track = new Track;
 				track->m_start_time = t;
 				track->m_entry_cell = (*itr);
-				track->m_color_id = color_id++;
+				track->m_color = color_id++;
 				(*itr)->m_track = track;
 				tracks.push_back(track);
 			}
@@ -434,6 +457,7 @@ CellTrack::Cell::Cell()
 	m_next_cell = NULL;
 
 	m_track = NULL;
+	m_vertices.clear();
 }
 
 CellTrack::Track* CellTrack::Cell::getTrack() const
@@ -544,13 +568,13 @@ void CellTrack::Cell::setNextCell(CellTrack::Cell* next_cell)
 
 vector<int> CellTrack::Cell::getVertices(ComponentTree* tree) const
 {
-	if(m_vertices.empty() && tree == NULL)
+	if(!m_vertices.empty()) return m_vertices;
+	if(tree != NULL) return this->getNode(tree)->getBetaPoints();
+	else
 	{
-		cerr<<"Cell::getVertices: Unable to get vertices"<<endl;
+		//cerr<<"Cell::getVertices: Unable to get vertices"<<endl;
+		return m_vertices;
 	}
-	if(tree == NULL) return this->m_vertices;
-	if(m_vertices.empty()) return this->getNode(tree)->getBetaPoints();
-	return m_vertices;
 }
 
 /***************************************************************************
@@ -572,7 +596,7 @@ void CellTrack::Frame::exportImage(char* img_file, Palette& palette)
 	int depth = this->depth();
 	cout<<"output image "<<img_file<<" with ";
 	cout<<this->cellNum()<<" cells"<<endl;
-	this->setVertices();
+	//this->setVertices();
 	//srand(time(NULL));
 	int size = width * height * depth;
 	unsigned char* img = new unsigned char[size*3];
@@ -580,7 +604,7 @@ void CellTrack::Frame::exportImage(char* img_file, Palette& palette)
 	vector<Cell*>::iterator it = m_cells.begin();
 	while(it != m_cells.end())
 	{
-		vector<int> vertices = (*it)->getVertices((ComponentTree*)NULL);
+		vector<int> vertices = (*it)->getVertices(this->getTree());
 		assert(!vertices.empty());
 		int color_id = (*it)->getTrack()->getColorId();
 		unsigned char r = palette(color_id).r; //rand() % 256;
@@ -605,9 +629,51 @@ void CellTrack::Frame::addCell(CellTrack::Cell* cell)
 	m_cells.push_back(cell);
 }
 
-bool CellTrack::Frame::createFromImage(char* img_file)
+map<int, CellTrack::Cell*> CellTrack::Frame::createFromImage(char* img_file, map<int, CellTrack::Cell*> &prev_map_cell)
 {
-	return true;
+	int width = 0;
+	int height = 0;
+	int depth = 0;
+	int channels = 0;
+	unsigned char* img = readtiff(img_file, &width, &height, &depth, &channels);
+	assert(width >= 1);
+	assert(height >= 1);
+	assert(depth >= 1);
+	assert(channels == 3);
+	m_width = width;
+	m_height = height;
+	m_depth = depth;
+	int img_size = width * height * depth;
+	
+	map<int, Cell*> map_cell;
+	for(int i = 0; i < img_size; i++)
+	{
+		int color = img[3*i] * 256 * 256 + img[3*i + 1] * 256 + img[3*i + 2];
+		if(color == 0) continue;
+		Cell* cell = NULL;
+		if(map_cell.find(color) != map_cell.end())
+		{
+			cell = map_cell[color];
+			cell->m_vertices.push_back(i);
+		}
+		else
+		{
+			cell = new Cell;
+			cell->m_vertices.push_back(i);
+
+			map_cell[color] = cell;
+			this->m_cells.push_back(cell);
+
+			if(prev_map_cell.find(color) != prev_map_cell.end())
+			{
+				Cell* prev_cell = prev_map_cell[color];
+				cell->m_prev_cell = prev_cell;
+				prev_cell->m_next_cell = cell;
+			}
+		}
+	}
+	delete img;
+	return map_cell;
 }
 
 void CellTrack::Frame::mergePrevFrame(CellTrack::Frame* prev_frame)
@@ -726,7 +792,7 @@ ComponentTree* CellTrack::Frame::getTree()
 	}
 	else 
 	{
-		cerr<<"Frame::getTree() unable to get component tree "<<m_tree_file.c_str()<<endl;
+		//cerr<<"Frame::getTree() unable to get component tree "<<m_tree_file.c_str()<<endl;
 		return NULL;
 	}
 }
@@ -764,11 +830,16 @@ void CellTrack::Frame::releaseVertices()
 		}
 	}
 }
-
+/*
 void CellTrack::Frame::setVertices()
 {
+
 	ComponentTree* tree = this->getTree();
-	assert(tree != NULL);
+	if(tree == NULL)
+	{
+		//cerr<<"Unable to setVertices, make sure all cells' vertices are alread set"<<endl;
+		return;
+	}
 	vector<Cell*>::iterator it = m_cells.begin();
 	while(it != m_cells.end())
 	{
@@ -779,7 +850,7 @@ void CellTrack::Frame::setVertices()
 		it++;
 	}
 }
-
+*/
 int CellTrack::Frame::cellNum() const
 {
 	return m_cells.size();
@@ -812,7 +883,7 @@ CellTrack::Track::Track()
 {
 	m_start_time = -1;
 	m_entry_cell = NULL;
-	m_color_id = -1;
+	m_color = -1;
 }
 
 CellTrack::Cell* CellTrack::Track::getStartCell() const
@@ -822,8 +893,8 @@ CellTrack::Cell* CellTrack::Track::getStartCell() const
 
 int CellTrack::Track::getColorId() const
 {
-	assert(m_color_id != -1);
-	return m_color_id;
+	assert(m_color != -1);
+	return m_color;
 }
 
 void CellTrack::Track::addNext(Cell* cell)

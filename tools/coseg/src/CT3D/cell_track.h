@@ -71,7 +71,7 @@ class CellTrack
 			Cell* getNextCell() const;
 			void  setNextCell(Cell*);
 
-			vector<int> getVertices(ComponentTree*) const;
+			vector<int> getVertices(ComponentTree* tree = NULL) const;
 
 		private:
 			int m_fir_node_label;                    // the first alignment result
@@ -95,11 +95,11 @@ class CellTrack
 			Frame();
 			void exportImage(char* img_file, Palette& palette);
 			void addCell(Cell* cell);
-			bool createFromImage(char* img_file);
+			map<int, Cell*> createFromImage(char* img_file, map<int, Cell*> &prev_map_cell);
 
 			void mergePrevFrame(Frame* prev_frame); // todo: consider NULL, free prev_frame
 			//vector<int> getReverseAlphaMapping(); // used in mergePrevFrame
-			void linkPrevFrame(Frame* frame);  //  used when loading image files
+			//void linkPrevFrame(Frame* frame);  //  used when loading image files
 
 			ComponentTree* getTree();
 			void setTree(ComponentTree*);
@@ -107,7 +107,7 @@ class CellTrack
 
 			void releaseTree(char*);
 			void releaseVertices();
-			void setVertices();
+			//void setVertices();
 			int cellNum() const;
 
 			vector<Cell*> getCells() const;
@@ -141,7 +141,7 @@ class CellTrack
 			int m_start_time;        // 0 for the first time
 			//vector<Cell*> m_cells;
 			Cell* m_entry_cell;
-			int m_color_id;
+			int m_color;
 	};
 
 	public:
@@ -184,11 +184,12 @@ class CellTrack
 	//int m_height;
 	//int m_depth;
 	//int m_startTime;   // 0 default, used when extractFramesand save
-	int m_numFrames;
-	int m_numTracks;
-	Frames m_frames;
-	Tracks m_tracks;
-	vector<char*> m_create_from_files;
+	//int m_numFrames;
+	//int m_numTracks;
+	Frames m_frames; // Frames = vector<Frame*>
+	Tracks m_tracks; // Tracks = vector<Track*>
+	vector<char*> m_tree_files;
+	vector<char*> m_img_files;
 };
 
 
