@@ -1,4 +1,13 @@
-#include "src/CT3D/cell_track.h"
+//
+//=======================================================================
+// Copyright 2011 Institute PICB.
+// Authors: Hang Xiao
+// Data : March 20, 2011
+//=======================================================================
+//
+
+
+#include "../../CT3D/cell_track.h"
 #include <vector>
 #include <string>
 int main(int argc, char* argv[])
@@ -8,5 +17,5 @@ int main(int argc, char* argv[])
 	tree_files.push_back(argv[1]);
 	tree_files.push_back(argv[2]);
 	cell_track.createFromTrees(tree_files);
-	cell_track.exportImages("cosegtwo_out");
+	cell_track.exportImages((char*)"cosegtwo_out");
 }

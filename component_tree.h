@@ -1,8 +1,8 @@
 //
 //=======================================================================
-// Copyright 2010 Institute PICB.
-// Authors: Hang Xiao, Axel Mosig
-// Data : July 11, 2010
+// Copyright 2011 Institute PICB.
+// Authors: Hang Xiao
+// Data : March 20, 2011
 //=======================================================================
 //
 

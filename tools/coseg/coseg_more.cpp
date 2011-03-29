@@ -1,4 +1,13 @@
-#include "src/CT3D/cell_track.h"
+//
+//=======================================================================
+// Copyright 2011 Institute PICB.
+// Authors: Hang Xiao
+// Data : March 20, 2011
+//=======================================================================
+//
+
+
+#include "../../CT3D/cell_track.h"
 #include <vector>
 #include <string>
 int main(int argc, char* argv[])

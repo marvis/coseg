@@ -1,8 +1,8 @@
 //
 //=======================================================================
-// Copyright 2010 Institute PICB.
-// Authors: Hang Xiao, Axel Mosig
-// Data : July 14, 2010
+// Copyright 2011 Institute PICB.
+// Authors: Hang Xiao
+// Data : March 20, 2011
 //=======================================================================
 //
 
@@ -23,7 +23,6 @@ using namespace std;
 
 typedef ComponentTree::Node TNode;
 typedef int TIME;
-
 
 class CellTrack
 {
@@ -84,6 +83,7 @@ class CellTrack
 			vector<int>    m_vertices;	          // seldom set this value
 
 			Track* m_track;              // used when in choose and remove operation
+			unsigned int m_color; // used only in createFromImages
 	};
 
 	class Frame
@@ -93,9 +93,9 @@ class CellTrack
 			friend class Track;
 		public:
 			Frame();
-			void exportImage(char* img_file, Palette& palette);
+			void exportImage(char* img_file/*, Palette& palette*/);
 			void addCell(Cell* cell);
-			map<int, Cell*> createFromImage(char* img_file, map<int, Cell*> &prev_map_cell);
+			map<unsigned int, Cell*> createFromImage(char* img_file, map<unsigned int, Cell*> &prev_map_cell);
 
 			void mergePrevFrame(Frame* prev_frame); // todo: consider NULL, free prev_frame
 			//vector<int> getReverseAlphaMapping(); // used in mergePrevFrame
@@ -133,7 +133,9 @@ class CellTrack
 		public:
 			Track();
 			Cell* getStartCell() const;
-			int getColorId() const;
+			//int getColorId() const;
+			unsigned int getColor() const;
+			void setColor(unsigned int color);
 			void addNext(Cell* cell);
 			vector<Cell*> getCells() const;
 			int cellNum() const;
@@ -141,7 +143,8 @@ class CellTrack
 			int m_start_time;        // 0 for the first time
 			//vector<Cell*> m_cells;
 			Cell* m_entry_cell;
-			int m_color;
+			//int m_color_id;
+			unsigned int m_color; // a*255^3 + b*255^2 + g*255 + r
 	};
 
 	public:
@@ -155,6 +158,7 @@ class CellTrack
 
 	bool createFromTrees(vector<char*> tree_files);
 	bool createFromImages(vector<char*> img_files);
+	void setTracksColor();
 	void exportImages(char* prefix = NULL) const;
 	//CellTrack* choose(vector<Track*> & tracks);
 	//CellTrack* chooseOnly(vector<Track*> & tracks);

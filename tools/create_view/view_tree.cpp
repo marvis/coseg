@@ -1,5 +1,14 @@
-#include "src/component_tree.h"
-#include "src/myalgorithms.h"
+//
+//=======================================================================
+// Copyright 2011 Institute PICB.
+// Authors: Hang Xiao
+// Data : March 20, 2011
+//=======================================================================
+//
+
+
+#include "../../component_tree.h"
+#include "../../myalgorithms.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

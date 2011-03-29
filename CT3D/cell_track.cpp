@@ -1,3 +1,12 @@
+//
+//=======================================================================
+// Copyright 2011 Institute PICB.
+// Authors: Hang Xiao
+// Data : March 20, 2011
+//=======================================================================
+//
+
+
 #include "cell_track.h"
 #include "palette.h"
 #include "../component_tree.h"
@@ -135,6 +144,7 @@ bool CellTrack::createFromImages(vector<char*> img_files)
 		cerr<<"unable to create tracks from frames"<<endl;
 		return false;
 	}
+	//setTracksColor(); // the color of Tracks is alread set
 	this->m_img_files = img_files;
 	return true;
 }
@@ -152,16 +162,36 @@ bool CellTrack::createFromTrees(vector<char*> tree_files)
 		cerr<<"unable to create tracks from frames"<<endl;
 		return false;
 	}
+	setTracksColor();
 	m_tree_files = tree_files;
 	return true;
+}
+
+void CellTrack::setTracksColor()
+{
+	assert(this->m_tracks.size() > 0);
+	Palette palette(m_tracks.size());
+	vector<Track*>::iterator it = this->m_tracks.begin();
+	int i = 0;
+	while(it != m_tracks.end())
+	{
+		unsigned int r = palette(i).r;
+		unsigned int g = palette(i).g;
+		unsigned int b = palette(i).b;
+		int color = r + g * 256 + b * 256 * 256; 
+		(*it)->setColor(color);
+		i++;
+		it++;
+	}
 }
 
 void CellTrack::exportImages(char* prefix) const
 {
 	vector<Frame*>::const_iterator it = m_frames.begin();
 	int id = 0;
-	int color_num = this->trackNum();
-	Palette palette(color_num);
+	//int color_num = this->trackNum();
+	//Palette palette(color_num);
+	//setTrackColor();
 	while(it != m_frames.end())
 	{
 		id++;
@@ -169,7 +199,7 @@ void CellTrack::exportImages(char* prefix) const
 		if(prefix != NULL) oss << prefix;
 		oss << id;
 		oss << ".tiff";
-		(*it)->exportImage((char*) oss.str().c_str(), palette);
+		(*it)->exportImage((char*) oss.str().c_str()/*, palette*/);
 		it++;
 	}
 }
@@ -400,7 +430,7 @@ bool CellTrack::createFramesFromImages(vector<char*> img_files, vector<CellTrack
 	assert(frames.empty());
 	int frame_num = img_files.size();
 	frames.resize(frame_num);
-	map<int, Cell*> map_cell;
+	map<unsigned int, Cell*> map_cell;
 	for(int i = 0;i < frame_num; i++)
 	{
 		frames[i] = new Frame;
@@ -416,7 +446,7 @@ bool CellTrack::createTracksFromFrames(CellTrack::Frames& frames, vector<CellTra
 	assert(tracks.empty());
 	vector<Frame*>::iterator it = frames.begin();
 	int t = start_time;
-	int color_id = 0;
+	//int color_id = 0;
 	while(it != frames.end())
 	{
 		vector<Cell*> cells = (*it)->getCells();
@@ -428,7 +458,8 @@ bool CellTrack::createTracksFromFrames(CellTrack::Frames& frames, vector<CellTra
 				Track* track = new Track;
 				track->m_start_time = t;
 				track->m_entry_cell = (*itr);
-				track->m_color = color_id++;
+				//track->m_color_id = color_id++;
+				track->m_color = (*itr)->m_color;
 				(*itr)->m_track = track;
 				tracks.push_back(track);
 			}
@@ -458,6 +489,8 @@ CellTrack::Cell::Cell()
 
 	m_track = NULL;
 	m_vertices.clear();
+
+	m_color = 0;
 }
 
 CellTrack::Track* CellTrack::Cell::getTrack() const
@@ -589,7 +622,7 @@ CellTrack::Frame::Frame()
 	m_depth = -1;
 }
 
-void CellTrack::Frame::exportImage(char* img_file, Palette& palette)
+void CellTrack::Frame::exportImage(char* img_file/*, Palette& palette*/)
 {
 	int width = this->width();
 	int height = this->height();
@@ -606,10 +639,14 @@ void CellTrack::Frame::exportImage(char* img_file, Palette& palette)
 	{
 		vector<int> vertices = (*it)->getVertices(this->getTree());
 		assert(!vertices.empty());
-		int color_id = (*it)->getTrack()->getColorId();
-		unsigned char r = palette(color_id).r; //rand() % 256;
-		unsigned char g = palette(color_id).g; //rand() % 256;
-		unsigned char b = palette(color_id).b; //rand() % 256;
+		//int color_id = (*it)->getTrack()->getColorId();
+		//unsigned char r = palette(color_id).r; //rand() % 256;
+		//unsigned char g = palette(color_id).g; //rand() % 256;
+		//unsigned char b = palette(color_id).b; //rand() % 256;
+		unsigned int color = (*it)->getTrack()->getColor();
+		unsigned char r = color % 256;
+		unsigned char g = (color/256)%256;
+		unsigned char b = (color/256/256)%256;
 		vector<int>::iterator itr = vertices.begin();
 		while(itr != vertices.end())
 		{
@@ -629,7 +666,7 @@ void CellTrack::Frame::addCell(CellTrack::Cell* cell)
 	m_cells.push_back(cell);
 }
 
-map<int, CellTrack::Cell*> CellTrack::Frame::createFromImage(char* img_file, map<int, CellTrack::Cell*> &prev_map_cell)
+map<unsigned int, CellTrack::Cell*> CellTrack::Frame::createFromImage(char* img_file, map<unsigned int, CellTrack::Cell*> &prev_map_cell)
 {
 	int width = 0;
 	int height = 0;
@@ -645,10 +682,10 @@ map<int, CellTrack::Cell*> CellTrack::Frame::createFromImage(char* img_file, map
 	m_depth = depth;
 	int img_size = width * height * depth;
 	
-	map<int, Cell*> map_cell;
+	map<unsigned int, Cell*> map_cell;
 	for(int i = 0; i < img_size; i++)
 	{
-		int color = img[3*i] * 256 * 256 + img[3*i + 1] * 256 + img[3*i + 2];
+		unsigned int color = img[3*i] + img[3*i + 1] * 256 + img[3*i + 2] * 256 * 256 ;
 		if(color == 0) continue;
 		Cell* cell = NULL;
 		if(map_cell.find(color) != map_cell.end())
@@ -660,6 +697,7 @@ map<int, CellTrack::Cell*> CellTrack::Frame::createFromImage(char* img_file, map
 		{
 			cell = new Cell;
 			cell->m_vertices.push_back(i);
+			cell->m_color = color;
 
 			map_cell[color] = cell;
 			this->m_cells.push_back(cell);
@@ -883,7 +921,8 @@ CellTrack::Track::Track()
 {
 	m_start_time = -1;
 	m_entry_cell = NULL;
-	m_color = -1;
+	//m_color_id = -1;
+	m_color = 0;
 }
 
 CellTrack::Cell* CellTrack::Track::getStartCell() const
@@ -891,10 +930,20 @@ CellTrack::Cell* CellTrack::Track::getStartCell() const
 	return m_entry_cell;
 }
 
-int CellTrack::Track::getColorId() const
+//int CellTrack::Track::getColorId() const
+//{
+//	assert(m_color_id != -1);
+//	return m_color_id;
+//}
+
+unsigned int CellTrack::Track::getColor() const
 {
-	assert(m_color != -1);
 	return m_color;
+}
+
+void CellTrack::Track::setColor(unsigned int color)
+{
+	m_color = color;
 }
 
 void CellTrack::Track::addNext(Cell* cell)
