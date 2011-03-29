@@ -698,7 +698,7 @@ bool ComponentTree::save(const char* treefile) const
         assert(m_numPixels > 0);
 	assert(m_numNodes > 0);
 	ofstream ofs;
-	bool saveType = true;
+	bool saveType = false;
 	string str_file(treefile);
 	if(str_file.find(".bin") != string::npos)
 	{
@@ -714,9 +714,6 @@ bool ComponentTree::save(const char* treefile) const
 	}
 	else 
 	{
-		cerr<<"Load Tree File: Cann't analysis file type."<<endl;
-		cerr<<"Make sure .bin.tree file as binary and .txt.tree file as txt file"<<endl;
-		return false;
 	}
 	if(ofs.fail()) 
 	{
@@ -831,7 +828,7 @@ bool ComponentTree::load(const char* treefile)
 		return false;
 	}
 	ifstream ifs;
-	bool saveType = true;
+	bool saveType = false;
 	string str_file(treefile);
 	if(str_file.find(".bin") != string::npos)
 	{
@@ -847,9 +844,6 @@ bool ComponentTree::load(const char* treefile)
 	}
 	else 
 	{
-		cerr<<"Load Tree File: Cann't analysis tree file: "<<treefile<<endl;
-		cerr<<"Make sure .bin.tree file as binary and .txt.tree file as txt file"<<endl;
-		return false;
 	}
 	if(ifs.fail())
 	{
