@@ -456,7 +456,7 @@ bool CellTrack::createTracksFromFrames(CellTrack::Frames& frames, vector<CellTra
 			if((*itr)->getPrevCell() == NULL)
 			{
 				Track* track = new Track;
-				track->m_start_time = t;
+				//track->m_start_time = t;
 				track->m_entry_cell = (*itr);
 				//track->m_color_id = color_id++;
 				track->m_color = (*itr)->m_color;
@@ -508,11 +508,11 @@ void CellTrack::Cell::setTrack(CellTrack::Track* track)
 	m_track = track;
 }
 
-void CellTrack::Cell::draw() const
+void CellTrack::Cell::draw(unsigned char* image, int w, int h, int d) const
 {
 }
 
-void CellTrack::Cell::drawCenter() const
+void CellTrack::Cell::drawMarker(unsigned char* image, int w, int h, int d) const
 {
 }
 
@@ -608,6 +608,27 @@ vector<int> CellTrack::Cell::getVertices(ComponentTree* tree) const
 		//cerr<<"Cell::getVertices: Unable to get vertices"<<endl;
 		return m_vertices;
 	}
+}
+
+int CellTrack::Cell::getCenter(int w, int h, int d) const
+{
+	vector<int> vertices = getVertices();
+	vector<int>::iterator it = vertices.begin();
+	int mean_w = vertices.size()/2;
+	int mean_h = vertices.size()/2;
+	int mean_d = vertices.size()/2;
+	while(it != vertices.end())
+	{
+		mean_w += (*it) % w;
+		mean_h += (*it/w) % h;
+		mean_d += (*it/w/h) % d;
+		it++;
+	}
+	mean_w = mean_w / vertices.size();
+	mean_h = mean_h / vertices.size();
+	mean_d = mean_d / vertices.size();
+	
+	return mean_d * w * h + mean_h * w + mean_w;
 }
 
 /***************************************************************************
@@ -919,7 +940,7 @@ int CellTrack::Frame::depth() const
 
 CellTrack::Track::Track()
 {
-	m_start_time = -1;
+	//m_start_time = -1;
 	m_entry_cell = NULL;
 	//m_color_id = -1;
 	m_color = 0;

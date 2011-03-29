@@ -44,8 +44,8 @@ class CellTrack
 			Track* getTrack() const;
 			void setTrack(Track*);
 			//double meanHeight() const;
-			void draw() const;
-			void drawCenter() const;
+			void draw(unsigned char* image, int w, int h, int d) const;
+			void drawMarker(unsigned char* image, int w, int h, int d) const;
 
 			vector<int>  getCenterArea() const;
 			void setCenterArea();
@@ -71,6 +71,7 @@ class CellTrack
 			void  setNextCell(Cell*);
 
 			vector<int> getVertices(ComponentTree* tree = NULL) const;
+			int getCenter(int w, int h, int d) const;
 
 		private:
 			int m_fir_node_label;                    // the first alignment result
@@ -140,7 +141,7 @@ class CellTrack
 			vector<Cell*> getCells() const;
 			int cellNum() const;
 		private:
-			int m_start_time;        // 0 for the first time
+			//int m_start_time;        // 0 for the first time
 			//vector<Cell*> m_cells;
 			Cell* m_entry_cell;
 			//int m_color_id;
@@ -157,13 +158,14 @@ class CellTrack
 	bool reload(char* track_file);
 
 	bool createFromTrees(vector<char*> tree_files);
-	bool createFromImages(vector<char*> img_files);
+	bool createFromImages(vector<char*> img_results);
+	void conspondToTrees(vector<char*> tree_files);         // used when cells are filtered
 	void setTracksColor();
 	void exportImages(char* prefix = NULL) const;
-	//CellTrack* choose(vector<Track*> & tracks);
-	//CellTrack* chooseOnly(vector<Track*> & tracks);
-	//CellTrack* remove(vector<Track*> & tracks);
-	//CellTrack* extractFrames();         // todo: reset time in each track
+	CellTrack* chooseLocally(vector<Track*> & tracks);
+	CellTrack* chooseGlobally(vector<Track*> & tracks);
+	CellTrack* remove(vector<Track*> & tracks);
+	CellTrack* extractFrames(int start, int end);         // todo: reset time in each track
 
 	Frame* getFrame(int time) const;
 	Track* getTrack(int index) const;
