@@ -2,6 +2,9 @@
 #include "cell_track.h"
 #include "cell_track_controller.h"
 
+#include <map>
+using namespace std;
+
 #define INT_MAX       2147483647
 
 CellTrackController::CellTrackController()
@@ -42,6 +45,10 @@ bool CellTrackController::createCellTrack(vector<char*> image_files, int _min, i
 		}
 		celltrack = new CellTrack();
 		bool rt = celltrack->createFramesFromTrees(tree_files);
+		if(rt)
+		{
+			this->initTracksState();
+		}
 		vector<char*>::iterator = tree_files.begin();
 		while(it != tree_files.end())
 		{
@@ -60,7 +67,9 @@ bool CellTrackController::loadCellTrack(vector<char*> image_results, vector<char
 	if(rt)
 	{
 		if(! tree_files.empty() && tree_files.size() == image_results.size())
-			cell_track->conspondToTrees(tree_files);
+			cell_track->conrespondToTrees(tree_files);
+
+		this->initTracksState();
 	}
 	return rt;
 }
@@ -74,14 +83,14 @@ bool CellTrackController::loadCellTrack(string track_file, vector<string> tree_f
 void CellTrackController::setFirst()
 {
 	current_time = 0;
-	setMarkedCells();
+	markChoosedCells();
 	cell_centers.clear();
 }
 
 void CellTrackController::setLast()
 {
 	current_time = celltrack->frameNum() - 1;
-	setMarkedCells();
+	markChoosedCells();
 	cell_centers.clear();
 }
 
@@ -94,7 +103,7 @@ void CellTrackController::setNext()
 	{
 		current_time++;
 	}
-	setMarkedCells();
+	markChoosedCells();
 	cell_centers.clear();
 }
 
@@ -107,10 +116,12 @@ void CellTrackController::setPrev()
 	{
 		current_time--;
 	}
-	setMarkedCells();
+	markChoosedCells();
 	cell_centers.clear();
 }
-
+/************************************************************
+ * Extract 3d texture of current frame
+ * **********************************************************/
 unsigned char* CellTrackController::getTexData()
 {
 	int w = width();
@@ -206,14 +217,28 @@ vector<CellTrack::Cell*> CellTrackController::getMarkedCells()
 	return marked_cells;
 }
 
+vector<CellTrack::Track*> CellTrackController::getMarkedTracks()
+{
+	vector<CellTrack::Track*> tracks;
+	map<CellTrack::Cell*,  bool>::iterator it = tracks_state.begin();
+	while(it != tracks_state.end())
+	{
+		if((*it).second) tracks.push_back((*it).first);
+		it++;
+	}
+	return tracks;
+}
+
 void CellTrackController::markCell(CellTrack::Cell* cell)
 {
 	tracks_state[cell->getTrack()] = true;
+	this->markChoosedCells();
 }
 
 void CellTrackController::unMarkCell(CellTrack::Cell* cell)
 {
 	tracks_state[cell->getTrack()] = false;
+	this->markChoosedCells();
 }
 
 void CellTrackController::markCellsReversely()
@@ -232,30 +257,92 @@ void CellTrackController::markCellsReversely()
 	}
 }
 
-void CellTrackController::chooseMarkedCellsLocally()
+void CellTrackController::initTracksState(vector<CellTrack::Track*> marked_tracks)
 {
-	vector<CellTrack::Frame*> frames;
-	vector<CellTrack::Track*> tracks;
+	assert(celltrack != NULL);
+	tracks_state.clear();
+	int track_num = celltrack->trackNum();
+	for(int i = 0; i < track_num; i++)
+	{
+		CellTrack::Track* track = celltrack->getTrack(i);
+		tracks_state[track] = false;
+	}
+	
+	if(!marked_tracks.empty())
+	{
+		vector<CellTrack::Track*>::iterator it = marked_tracks.begin();
+		while(it != marked_tracks.end())
+		{
+			assert(tracks_state.find(*it) != tracks_state.end());
+			tracks_state[*it] = true;
+			it++;
+		}
+	}
 }
 
-void CellTrackController::chooseMarkedCellsGlobally()
+/************************************************************
+ * tracks start from later frame are called unvisited tracks
+ * **********************************************************/
+void CellTrackController::choose(bool keep_unvisited_tracks)
 {
+	CellTrack* old_celltrack = celltrack;
+	vector<CellTrack::Track*> tracks = this->getMarkedTracks();
+	if(keep_unvisited_tracks)
+	{
+		vector<CellTrack::Track*> all_tracks = tracks;
+        for(int i = current_time  + 1 ; i < frameNum(); i++)
+        {
+            vector<CellTrack::Cell*> cells = celltrack->getFrame(i)->getCells();
+            vector<CellTrack::Cell*>::iterator it = cells.begin();
+            while(it != cells.end())
+            {
+				CellTrack::Cell* cell = *it;
+				CellTrack::Track* track = cell->getTrack();
+				//if appeare in later frame and not manually track
+                if(cell->getPrevCell() == NULL && !tracks_state[track])
+                {
+                   	all_tracks.push_back(cell->getTrack());
+                }
+                it++;
+            }
+        }
+		celltrack = celltrack->choose(all_tracks);
+	}
+	else
+	{
+		celltrack = celltrack->choose(tracks);
+	}
+	this->initTracksState(tracks);
+	this->markChoosedCells();
+	pushState(old_celltrack);
+	cell_centers.clear();
 }
 
-void CellTrackController::removeMarkedCells()
+void CellTrackController::pushState(CellTrack* old)
 {
+	history.push_back(old);
 }
 
-void CellTrackController::pushState()
+CellTrack* CellTrackController::popState()
 {
-}
-
-void CellTrackController::popState()
-{
+	if(history.empty())
+	{
+		return NULL;
+	}
+	else
+		return history.pop_back();
 }
 
 void CellTrackController::undo()
 {
+	if(!history.empty())
+	{
+
+		vector<CellTrack::Track*> tracks = this->getMarkedTracks();
+		celltrack = this->popState();
+		this->initTracksState(tracks);
+		this->markChoosedCells();
+	}
 }
 
 void CellTrackController::setCellCenters()

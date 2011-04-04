@@ -10,6 +10,9 @@
 #define CELL_TRACK_CONTROL_H_H
 
 #include "cell_track.h"
+#include <map>
+
+using namespace std;
 
 class CellTrackController
 {
@@ -34,16 +37,16 @@ class CellTrackController
 		
 		CellTrack::Cell* getClickedCell(int position);
 		vector<CellTrack::Cell*> getMarkedCells(); // get marked cells in current frame
-		void setMarkedCells(); // used when change frames
+		vector<CellTrack::Track*> getMarkedTracks(); // get marked cells in all frames
 
+		virtual void markChoosedCells(/*CellTrack::Frame * frame = NULL*/); // used when change frames
 		void markCell(CellTrack::Cell*);	
 		void unMarkCell(CellTrack::Cell*);
 		void markCellsReversely(); // reversly mark cells in current frame
+
+		void initTracksState(vector<CellTrack::Track*> marked_tracks = vector<CellTrack::Track*>());
 		
-		// choose and remove will produce new CellTrack object, old CellTrack object will be saved.
-		void chooseMarkedCellsLocally();      // do not affect the choose of cells in other frames
-		void chooseMarkedCellsGlobally();     // once choosed, no new cells will produce in next frames
-		void removeMarkedCells();
+		virtual void choose(bool keep_unvisited_tracks = true);     // once choosed, no new cells will produce in next frames
 		void pushState(CellTrack*);
 		CellTrack* popState();
 		void undo();
@@ -52,8 +55,8 @@ class CellTrackController
 	private:
 		vector<CellTrack*> history;
 		CellTrack* celltrack;
-		map<CellTrack::Track*, bool> tracks_state; // affect by choose or remove operation
-		map<CellTrack::Cell*, int> cell_centers;  // will be cleared when change frames, affect by choose of remove operation
+		map<CellTrack::Track*, bool> tracks_state; // affect by create choose undo operation
+		map<CellTrack::Cell*, int> cell_centers;  // will be cleared when change frames,  choose and undo, will be create when clicked first cell
 		int current_time;  // start from 0
 };
 

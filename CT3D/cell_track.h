@@ -90,6 +90,7 @@ class CellTrack
 	class Frame
 	{
 		public:
+			friend class CellTrack;
 			friend class Cell;
 			friend class Track;
 		public:
@@ -159,13 +160,15 @@ class CellTrack
 
 	bool createFromTrees(vector<char*> tree_files);
 	bool createFromImages(vector<char*> img_results);
-	void conspondToTrees(vector<char*> tree_files);         // used when cells are filtered
+	void conrespondToTrees(vector<char*> tree_files);         // used when cells are filtered
 	void setTracksColor();
 	void exportImages(char* prefix = NULL) const;
-	CellTrack* chooseLocally(vector<Track*> & tracks);
-	CellTrack* chooseGlobally(vector<Track*> & tracks);
-	CellTrack* remove(vector<Track*> & tracks);
-	CellTrack* extractFrames(int start, int end);         // todo: reset time in each track
+
+	//CellTrack* chooseLocally(vector<Track*>  tracks, int frame_id);
+	//CellTrack* chooseGlobally(vector<Track*>  tracks);
+	CellTrack* choose(vector<Track*>  tracks);
+	CellTrack* remove(vector<Track*>  tracks);
+	CellTrack* clip(int frame_start_id, int frame_end_id);   
 
 	Frame* getFrame(int time) const;
 	Track* getTrack(int index) const;
@@ -194,8 +197,8 @@ class CellTrack
 	//int m_numTracks;
 	Frames m_frames; // Frames = vector<Frame*>
 	Tracks m_tracks; // Tracks = vector<Track*>
-	vector<char*> m_tree_files;
-	vector<char*> m_img_files;
+	//vector<char*> m_tree_files;
+	//vector<char*> m_img_files;
 };
 
 

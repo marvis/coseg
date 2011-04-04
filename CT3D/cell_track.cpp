@@ -145,7 +145,7 @@ bool CellTrack::createFromImages(vector<char*> img_files)
 		return false;
 	}
 	//setTracksColor(); // the color of Tracks is alread set
-	this->m_img_files = img_files;
+	//this->m_img_files = img_files;
 	return true;
 }
 
@@ -163,7 +163,7 @@ bool CellTrack::createFromTrees(vector<char*> tree_files)
 		return false;
 	}
 	setTracksColor();
-	m_tree_files = tree_files;
+	//m_tree_files = tree_files;
 	return true;
 }
 
@@ -202,6 +202,126 @@ void CellTrack::exportImages(char* prefix) const
 		(*it)->exportImage((char*) oss.str().c_str()/*, palette*/);
 		it++;
 	}
+}
+/************************************************************
+ * chooseLocally: choose cells marked in current frame and 
+ * previous frames as well as all the cells appeared only in
+ * later frames
+ *
+ * When talking about choose , we mean chooseLocally
+ *
+ * Note: only frame is new created
+ ************************************************************/
+/*CellTrack* CellTrack::chooseLocally(vector<CellTrack::Track*>  tracks, int frame_id)
+{
+	assert(frame_id >= 0 && frame_id < frameNum());
+	if(frame_id < frameNum() - 1) 
+	{
+		for(int i = frame_id + 1 ; i < frameNum(); i++)
+		{
+			vector<Cell*> cells = this->getFrame(i)->getCells();
+			vector<Cell*>::iterator it = cells.begin();
+			while(it != cells.end())
+			{
+				Cell* cell = *it;
+				if(cell->getPrevCell() == NULL)
+				{
+					tracks.push_back(cell->getTrack());
+				}
+				it++;
+			}
+		}
+	}
+	return chooseGlobally(tracks);
+}
+*/
+
+/************************************************************
+ * chooseGlobally: choose cells marked in current frame and 
+ * previous frames, the cells in later frames will be deleted
+ *
+ * Note : only frame is new created
+ ************************************************************/
+CellTrack* CellTrack::choose(vector<CellTrack::Track*> tracks)
+{
+	int frame_num = frameNum();
+	CellTrack* ct = new CellTrack();
+	ct->m_tracks = tracks;
+	ct->m_frames.resize(frame_num);
+	set<Track*> set_tracks(tracks.begin(), tracks.end());
+	assert(set_tracks.size() == tracks.size());
+
+	for(int i = 0; i < frame_num; i++)
+	{
+		Frame* frame_this = this->getFrame(i);
+		Frame* frame_new = new Frame();
+		frame_new->m_width = frame_this->width();
+		frame_new->m_height = frame_this->height();
+		frame_new->m_depth = frame_this->depth();
+		frame_new->m_tree_file = frame_this->m_tree_file;
+		frame_new->m_tree = frame_this->m_tree;
+
+		vector<Cell*> cells = frame_this->getCells();
+		vector<Cell*>::iterator it = cells.begin();
+		while(it != cells.end())
+		{
+			if(set_tracks.find((*it)->getTrack()) != set_tracks.end())
+			{
+				frame_new->addCell(*it);
+			}
+			it++;
+		}
+		ct->m_frames[i] = frame_new;
+	}
+	return ct;
+}
+
+/***************************************************************************
+ * Remove marked tracks
+ * *************************************************************************/
+CellTrack* CellTrack::remove(vector<CellTrack::Track*> tracks)
+{
+	set<Track*> set_tracks(tracks.begin(), tracks.end());
+	vector<Track*> rev_tracks;
+	for(int i = 0; i < this->trackNum(); i++)
+	{
+		Track* track = this->getTrack(i);
+		if(set_tracks.find(track) == set_tracks.end()) rev_tracks.push_back(track)
+	}
+	return choose(rev_tracks);
+}
+/************************************************************
+ * get Frames with id >= frame_start_id, < frame_end_id
+ *
+ * we will use the same pointer of frame and track
+ * **********************************************************/
+CellTrack* CellTrack::clip(int frame_start_id, int frame_end_id)
+{
+	assert(frame_start_id >= 0 && 
+			frame_start_id <= frame_end_id &&
+			frame_end_id <= frameNum());
+
+	CellTrack* ct = new CellTrack();
+	ct->m_frames.resize(frame_end_id - frame_start_id);
+	vector<Track*> tracks;
+	for(int i = frame_start_id; i < frame_end_id; i++)
+	{
+		Frame* frame = this->getFrame(i);
+		ct->m_frames[i - frame_start_id] = frame;
+		vector<Cell*> cells = frame->getCells();
+		vector<Cell*>::iterator it = cells.begin();
+		while(it != cells.end())
+		{
+			Cell* cell = *it;
+			if(cell->getPrevCell() == NULL)
+			{
+				tracks.push_back(cell->getTrack());
+			}
+			it++;
+		}
+	}
+	ct->m_tracks = tracks;
+	return ct;
 }
 
 CellTrack::Frame* CellTrack::getFrame(int time) const
