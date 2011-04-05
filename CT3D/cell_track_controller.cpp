@@ -2,6 +2,7 @@
 #include "cell_track.h"
 #include "cell_track_controller.h"
 
+#include <iostream>
 #include <map>
 using namespace std;
 
@@ -66,10 +67,14 @@ bool CellTrackController::loadCellTrack(vector<char*> image_results, vector<char
 	bool rt = cell_track->createFromImages(img_results);
 	if(rt)
 	{
-		if(! tree_files.empty() && tree_files.size() == image_results.size())
-			cell_track->conrespondToTrees(tree_files);
-
 		this->initTracksState();
+		if(! tree_files.empty() && tree_files.size() == image_results.size())
+		{
+			if(!cell_track->correspondToTrees(tree_files))
+			{
+				cerr<<"loadCellTrack error : unable to match trees with cells of frames"<<endl;
+			}
+		}
 	}
 	return rt;
 }

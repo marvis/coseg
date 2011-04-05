@@ -105,6 +105,7 @@ class CellTrack
 
 			ComponentTree* getTree();
 			void setTree(ComponentTree*);
+			bool correspondToTree(ComponentTree*);
 			//void setTreeFile(char* tree_file);
 
 			void releaseTree(char*);
@@ -160,7 +161,7 @@ class CellTrack
 
 	bool createFromTrees(vector<char*> tree_files);
 	bool createFromImages(vector<char*> img_results);
-	void conrespondToTrees(vector<char*> tree_files);         // used when cells are filtered
+	bool correspondToTrees(vector<char*> tree_files);         // used when cells are filtered
 	void setTracksColor();
 	void exportImages(char* prefix = NULL) const;
 

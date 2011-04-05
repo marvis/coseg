@@ -88,6 +88,10 @@ void ComponentTree::Pixel::merge_entry(ComponentTree::Pixel *entry)
     entry->next = temp;
 }
 
+ComponentTree::Node* ComponentTree::Pixel::getNode() const
+{
+	return node;
+}
 /******************************************************************
  * ComponentTree::Node
  ****************************************************************/
@@ -982,6 +986,45 @@ ComponentTree::Node* ComponentTree::getNode(int label) const
 	assert(label >= 0);
 	assert(label < (int)m_nodes.size());
 	return m_nodes[label];
+}
+
+ComponentTree::Node* ComponentTree::getNode(vector<int> points) const
+{
+	assert(!points.empty());
+	vector<int>::iterator it = points.begin();
+	Node* root_node = NULL;
+	// find root_node
+	while(it != points.end())
+	{
+		Node* node = m_pixels[*it].getNode();
+		if(root_node == NULL)
+		{
+			root_node = node;
+		}
+		else
+		{
+			if(root_node->getBetaSize() < node->getBetaSize())
+			{
+				root_node = node;
+			}
+			if(root_node->getBetaSize() == points.size())
+			{
+				break;
+			}
+		}
+		it++;
+	}
+
+	// check root_node
+	it = points.begin();
+	while(it != points.end())
+	{
+		Node* p = m_pixels[*it].getNode();
+		while(p != root_node && p != p->getParent()) p = p->getParent();
+		if(p != root_node) return NULL;	
+		it++;
+	}
+	return root_node;
 }
 
 ComponentTree::Paths ComponentTree::getPaths() const

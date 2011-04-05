@@ -149,6 +149,21 @@ bool CellTrack::createFromImages(vector<char*> img_files)
 	return true;
 }
 
+bool CellTrack::correspondToTrees(vector<char*> tree_files)
+{
+	assert(tree_files.size() == frameNum());
+	for(int i = 0; i < frameNum(); i++)
+	{
+		ComponentTree* tree = new ComponentTree(tree_files[i]);
+		if(!m_frames[i]->correspondToTree(tree))
+		{
+			cerr<<"correspondToTree error: Frame "<<i<<"+1 unable to match tree"<<endl;
+			return false;
+		}
+	}
+	return true;
+}
+
 bool CellTrack::createFromTrees(vector<char*> tree_files)
 {
 	assert(m_frames.empty());
@@ -286,7 +301,7 @@ CellTrack* CellTrack::remove(vector<CellTrack::Track*> tracks)
 	for(int i = 0; i < this->trackNum(); i++)
 	{
 		Track* track = this->getTrack(i);
-		if(set_tracks.find(track) == set_tracks.end()) rev_tracks.push_back(track)
+		if(set_tracks.find(track) == set_tracks.end()) rev_tracks.push_back(track);
 	}
 	return choose(rev_tracks);
 }
@@ -983,6 +998,29 @@ void CellTrack::Frame::setTree(ComponentTree* tree)
 	m_width = tree->width();
 	m_height = tree->height();
 	m_depth = tree->depth();
+}
+
+bool CellTrack::Frame::correspondToTree(ComponentTree* tree)
+{
+	if(tree->width() != m_width || 
+			tree->height() != m_height ||
+			tree->depth() != m_depth)
+	{
+		return false;
+	}
+	assert(!m_cells.empty());
+	vector<Cell*>::iterator it = m_cells.begin();
+	while(it != m_cells.end())
+	{
+		Cell* cell = *it;
+		TNode* node = tree->getNode(cell->getVertices());
+		if(node != NULL) cell->setCurNode(node);
+		else return false;
+		it++;
+	}
+	assert(this->m_tree != NULL);
+	this->m_tree = tree;
+	return true;
 }
 
 void CellTrack::Frame::releaseTree(char* tree_file)

@@ -36,6 +36,7 @@ class ComponentTree
 				bool save(ofstream& ofs, bool saveType = true) const;
 				bool load(ifstream& ifs, vector<Pixel>& pixels, vector<Node*>& nodes, bool saveType=true);
 				void merge_entry(Pixel* entry);
+				Node* getNode() const;
 
 			private:
 				int  pos;
@@ -103,7 +104,8 @@ class ComponentTree
 		int height() const;
 		int depth() const;
 		Node* root() const;
-		Node* getNode(int) const;  //node of label 
+		Node* getNode(int label) const;  //node of label 
+		Node* getNode(vector<int> points) const;  //node of points
 
 		Paths getPaths() const;
 
@@ -135,7 +137,7 @@ class ComponentTree
 		vector<Pixel> m_pixels;
 		Nodes m_nodes; //store the nodes in post order
 		Nodes m_leafs; //store all the leafs
-		Node* m_root;  //the root Node
+		Node* m_root;  //the root Node point to itself
 };
 
 class DisjointSets
