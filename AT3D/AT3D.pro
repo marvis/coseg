@@ -9,24 +9,31 @@ INCLUDEPATH += .
 QT += opengl
 CONFIG += qt \
     debug
-LIBS += -ltiff
+LIBS += -ltiff -lGLEW -llpsolve55
 
 # Input
-HEADERS += AT3D.h \
-    glwidget.h \
+HEADERS += glwidget.h \
     ../myalgorithms.h \
-    display.h \
+    at3d_view.h \
     ../component_tree.h \
     ui/filterDlg.h \
-    ui/adjustregiondialog.h
-FORMS += ui/display.ui \
+    ui/adjustregiondialog.h \
+	vsvr.h \
+	../CT3D/cell_track_controller.h \
+  	../CT3D/cell_track.h \
+  	../CT3D/palette.h
+
+FORMS += ui/at3d_view.ui \
     ui/filters.ui \
     ui/adjustregiondialog.ui
-SOURCES += AT3D.cpp \
-    glwidget.cpp \
+SOURCES += glwidget.cpp \
     ../myalgorithms.cpp \
-    display.cpp \
+    at3d_view.cpp \
     main.cpp \
     ../component_tree.cpp \
     ui/filterDlg.cpp \
-    ui/adjustregiondialog.cpp
+    ui/adjustregiondialog.cpp \
+	vsvr.cpp \
+	../CT3D/cell_track_controller.cpp \
+  	../CT3D/cell_track.cpp \
+  	../CT3D/palette.cpp

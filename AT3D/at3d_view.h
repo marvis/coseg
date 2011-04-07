@@ -5,15 +5,14 @@
 #include <vector>
 #include <stack>
 #include "glwidget.h"
-#include "AT3D.h"
+#include "../CT3D/cell_track_controller.h"
 #include "../component_tree.h"
-#include "ui_display.h"
+#include "ui_at3d_view.h"
 #include "./ui/filterDlg.h"
 using namespace std;
 
-
 //==================================================
-class AT3DVIEW : public QWidget
+class AT3DVIEW : public QWidget, public CellTrackController
 //==================================================
 {
 	
@@ -105,17 +104,17 @@ private:
 	
 	Ui::window ui;
 
-	AT3D m_at3d;
+	//AT3D m_at3d;
 	
-	vector<AT3D::Cell*> m_cells;     // vector<AT3D::Cell*> is also Frame, we can get m_cells easily
+	//vector<AT3D::Cell*> m_cells;     // vector<AT3D::Cell*> is also Frame, we can get m_cells easily
 	
 	vector<QCheckBox*> m_checkers;
 	
 	//int m_numCells;             //changes too often
 		
-	int m_numFrames; 
+	//int m_numFrames; 
 	
-	int m_currentTime;
+	//int m_currentTime;
 	
 	GLWidget* m_glWidget;
 	

@@ -1,6 +1,6 @@
  #include <QApplication>
 
- #include "display.h"
+ #include "at3d_view.h"
 
 int main(int argc, char *argv[])
 {
