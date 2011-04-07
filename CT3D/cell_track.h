@@ -176,8 +176,8 @@ class CellTrack
 	//vector<Track*> getTracks() const;
 	//vector<Track*> getTracks(vector<vector<Cell*> > &frames);
 
-	int frameNum() const;
-	int trackNum() const;
+	unsigned int frameNum() const;
+	unsigned int trackNum() const;
 
 	public:
 	void releaseFrames();

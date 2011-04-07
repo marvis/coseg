@@ -3,7 +3,9 @@
 #include "cell_track_controller.h"
 
 #include <iostream>
+#include <cstring>
 #include <map>
+#include <cassert>
 using namespace std;
 
 #define INT_MAX       2147483647
@@ -17,7 +19,7 @@ CellTrackController::CellTrackController()
 bool CellTrackController::createCellTrack(vector<char*> tree_files)
 {
 	celltrack = new CellTrack();	
-	return celltrack->createFramesFromTrees(tree_files);
+	return celltrack->createFromTrees(tree_files);
 }
 
 bool CellTrackController::createCellTrack(vector<char*> image_files, int _min, int _max, int _single)
@@ -30,9 +32,9 @@ bool CellTrackController::createCellTrack(vector<char*> image_files, int _min, i
 	{
 		ComponentTree *tree = new ComponentTree();
 		vector<char*> tree_files;
-		for(int i = 0; i < image_files.sizel(); i++)
+		for(int i = 0; i < image_files.size(); i++)
 		{
-			tree->clear;
+			tree->clear();
 			tree->create(image_files[i], _min, _max, _single);
 			//===============================================
 			char* tree_file = new char[200];
@@ -41,16 +43,16 @@ bool CellTrackController::createCellTrack(vector<char*> image_files, int _min, i
 			str_file.append(".bin.tree");
 			strcpy(tree_file, str_file.c_str());
 			//===============================================
-			tree.save((const char*)tree_file);
+			tree->save((const char*)tree_file);
 			tree_files.push_back(tree_file);
 		}
 		celltrack = new CellTrack();
-		bool rt = celltrack->createFramesFromTrees(tree_files);
+		bool rt = celltrack->createFromTrees(tree_files);
 		if(rt)
 		{
 			this->initTracksState();
 		}
-		vector<char*>::iterator = tree_files.begin();
+		vector<char*>::iterator it = tree_files.begin();
 		while(it != tree_files.end())
 		{
 			delete (*it);
@@ -64,13 +66,13 @@ bool CellTrackController::createCellTrack(vector<char*> image_files, int _min, i
 bool CellTrackController::loadCellTrack(vector<char*> image_results, vector<char*> tree_files)
 {
 	celltrack = new CellTrack();
-	bool rt = cell_track->createFromImages(img_results);
+	bool rt = celltrack->createFromImages(image_results);
 	if(rt)
 	{
 		this->initTracksState();
 		if(! tree_files.empty() && tree_files.size() == image_results.size())
 		{
-			if(!cell_track->correspondToTrees(tree_files))
+			if(!celltrack->correspondToTrees(tree_files))
 			{
 				cerr<<"loadCellTrack error : unable to match trees with cells of frames"<<endl;
 			}
@@ -140,9 +142,9 @@ unsigned char* CellTrackController::getTexData()
 		(*it)->draw(image, w, h, d);
 		it++;
 	}
-	vector<Cell*> marked_cells = getMarkedCells();
+	vector<CellTrack::Cell*> marked_cells = getMarkedCells();
 	it = marked_cells.begin();
-	while(it != marked_cells)
+	while(it != marked_cells.end())
 	{
 		(*it)->drawMarker(image, w, h, d);
 		it++;
@@ -225,13 +227,16 @@ vector<CellTrack::Cell*> CellTrackController::getMarkedCells()
 vector<CellTrack::Track*> CellTrackController::getMarkedTracks()
 {
 	vector<CellTrack::Track*> tracks;
-	map<CellTrack::Cell*,  bool>::iterator it = tracks_state.begin();
+	map<CellTrack::Track*,  bool>::iterator it = tracks_state.begin();
 	while(it != tracks_state.end())
 	{
 		if((*it).second) tracks.push_back((*it).first);
 		it++;
 	}
 	return tracks;
+}
+void CellTrackController::markChoosedCells()
+{
 }
 
 void CellTrackController::markCell(CellTrack::Cell* cell)
@@ -295,7 +300,8 @@ void CellTrackController::choose(bool keep_unvisited_tracks)
 	if(keep_unvisited_tracks)
 	{
 		vector<CellTrack::Track*> all_tracks = tracks;
-        for(int i = current_time  + 1 ; i < frameNum(); i++)
+		int frame_num = celltrack->frameNum();
+        for(int i = current_time  + 1 ; i < frame_num; i++)
         {
             vector<CellTrack::Cell*> cells = celltrack->getFrame(i)->getCells();
             vector<CellTrack::Cell*>::iterator it = cells.begin();
@@ -335,15 +341,20 @@ CellTrack* CellTrackController::popState()
 		return NULL;
 	}
 	else
-		return history.pop_back();
+	{
+		CellTrack* rt = *history.rbegin();
+		history.pop_back();
+		return rt;
+	}
 }
 
 void CellTrackController::undo()
 {
 	if(!history.empty())
 	{
-
 		vector<CellTrack::Track*> tracks = this->getMarkedTracks();
+		celltrack->releaseFrames();
+		delete celltrack;
 		celltrack = this->popState();
 		this->initTracksState(tracks);
 		this->markChoosedCells();
@@ -356,8 +367,8 @@ void CellTrackController::setCellCenters()
 	int w = this->width();
 	int h = this->height();
 	int d = this->depth();
-	vector<CellTrack*> cells = celltrack->getFrame(current_time)->getCells();
-	vector<CellTrack*>::iterator it = cells.begin();
+	vector<CellTrack::Cell*> cells = celltrack->getFrame(current_time)->getCells();
+	vector<CellTrack::Cell*>::iterator it = cells.begin();
 	while(it != cells.end())
 	{
 		int center = (*it)->getCenter(w, h, d);

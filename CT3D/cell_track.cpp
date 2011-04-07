@@ -353,26 +353,68 @@ CellTrack::Track* CellTrack::getTrack(int index) const
 	return m_tracks[index];
 }
 
-int CellTrack::frameNum() const
+unsigned int CellTrack::frameNum() const
 {
 	return m_frames.size();
 }
 
-int CellTrack::trackNum() const
+unsigned int CellTrack::trackNum() const
 {
 	return m_tracks.size();
 }
 
 void CellTrack::releaseFrames()
 {
+	if(!m_frames.empty())
+	{
+		vector<Frame*>::iterator it = m_frames.begin();
+		while(it != m_frames.end()) 
+		{
+			delete *it;
+			it++;
+		}
+	}
 }
-
+/************************************************************************
+ * Becareful here, each cell have a pointer to track which will be free,
+ * So make sure releaseTracks and releaseAllCells are done simulataneously 
+ * **********************************************************************/
 void CellTrack::releaseTracks()
 {
+	if(!m_tracks.empty())
+	{
+		vector<Track*>::iterator it = m_tracks.begin();
+		while(it != m_tracks.end())
+		{
+			/*
+			Cell* p = (*it)->getStartCell();
+			p->setTrack(NULL);
+			while(p->getNextCell() != NULL) 
+			{
+				p = p->getNextCell();
+				p->setTrack(NULL);
+			}*/
+			delete *it;
+			it++;
+		}
+	}
 }
-
+/**************************************************************************
+ * After releaseTracks, we may need to releaseAllCells
+ * ************************************************************************/
 void CellTrack::releaseAllCells()
 {
+	int frame_num = frameNum();
+	for(int i = 0; i < frame_num; i++)
+	{
+		vector<Cell*> cells = this->getFrame(i)->getCells();
+		vector<Cell*>::iterator it = cells.begin();
+		while(it != cells.end())
+		{
+			delete (*it);
+			it++;
+		}
+	}
 }
 
 bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2,vector<CellTrack::Frame*> &frames)
@@ -639,7 +681,7 @@ CellTrack::Track* CellTrack::Cell::getTrack() const
 
 void CellTrack::Cell::setTrack(CellTrack::Track* track)
 {
-	assert(track != NULL);
+	//assert(track != NULL);
 	m_track = track;
 }
 

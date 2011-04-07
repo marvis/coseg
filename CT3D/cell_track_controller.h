@@ -39,14 +39,14 @@ class CellTrackController
 		vector<CellTrack::Cell*> getMarkedCells(); // get marked cells in current frame
 		vector<CellTrack::Track*> getMarkedTracks(); // get marked cells in all frames
 
-		virtual void markChoosedCells(/*CellTrack::Frame * frame = NULL*/); // used when change frames
+		/*virtual*/ void markChoosedCells(/*CellTrack::Frame * frame = NULL*/); // used when change frames
 		void markCell(CellTrack::Cell*);	
 		void unMarkCell(CellTrack::Cell*);
 		void markCellsReversely(); // reversly mark cells in current frame
 
 		void initTracksState(vector<CellTrack::Track*> marked_tracks = vector<CellTrack::Track*>());
 		
-		virtual void choose(bool keep_unvisited_tracks = true);     // once choosed, no new cells will produce in next frames
+		/*virtual*/ void choose(bool keep_unvisited_tracks = true);     // once choosed, no new cells will produce in next frames
 		void pushState(CellTrack*);
 		CellTrack* popState();
 		void undo();
