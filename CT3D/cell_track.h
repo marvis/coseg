@@ -148,6 +148,7 @@ class CellTrack
 			Cell* m_entry_cell;
 			//int m_color_id;
 			unsigned int m_color; // a*255^3 + b*255^2 + g*255 + r
+			int m_track_id;    //start from 0
 	};
 
 	public:

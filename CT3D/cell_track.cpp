@@ -623,7 +623,7 @@ bool CellTrack::createTracksFromFrames(CellTrack::Frames& frames, vector<CellTra
 	assert(tracks.empty());
 	vector<Frame*>::iterator it = frames.begin();
 	int t = start_time;
-	//int color_id = 0;
+	int track_id = 0;
 	while(it != frames.end())
 	{
 		vector<Cell*> cells = (*it)->getCells();
@@ -635,8 +635,8 @@ bool CellTrack::createTracksFromFrames(CellTrack::Frames& frames, vector<CellTra
 				Track* track = new Track;
 				//track->m_start_time = t;
 				track->m_entry_cell = (*itr);
-				//track->m_color_id = color_id++;
 				track->m_color = (*itr)->m_color;
+				track->m_track_id = track_id++;
 				(*itr)->m_track = track;
 				tracks.push_back(track);
 			}
@@ -1144,6 +1144,7 @@ CellTrack::Track::Track()
 	m_entry_cell = NULL;
 	//m_color_id = -1;
 	m_color = 0;
+	m_track_id = -1;
 }
 
 CellTrack::Cell* CellTrack::Track::getStartCell() const
