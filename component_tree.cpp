@@ -1399,7 +1399,6 @@ int DisjointSets::FindSet(int pixelId) const
 		curNode->parent = root;
 		curNode = next;
 	}
-
 	return root->index;
 }
 

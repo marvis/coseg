@@ -71,8 +71,12 @@ class CellTrack
 			void  setNextCell(Cell*);
 
 			vector<int> getVertices(ComponentTree* tree = NULL) const;
+			int getVolume() const;
+			int getSize() const;
 			int getCenter(int w, int h, int d) const;
 
+			unsigned int getColor() const;
+			void setColor(unsigned int color);
 		private:
 			int m_fir_node_label;                    // the first alignment result
 			int m_sec_node_label;                    // the second alignment result
@@ -142,6 +146,7 @@ class CellTrack
 			void addNext(Cell* cell);
 			vector<Cell*> getCells() const;
 			int cellNum() const;
+			int trackId() const;
 		private:
 			//int m_start_time;        // 0 for the first time
 			//vector<Cell*> m_cells;

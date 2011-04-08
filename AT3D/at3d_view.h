@@ -5,6 +5,7 @@
 #include <vector>
 #include <stack>
 #include "glwidget.h"
+#include "cellwidget.h"
 #include "../CT3D/cell_track_controller.h"
 #include "../component_tree.h"
 #include "ui_at3d_view.h"
@@ -25,10 +26,9 @@ private slots:
 	/************************
 	 * File Group
 	 ************************/
-        void on_adjustRegionButton_clicked();
- void onOpen();
+	void onOpen();
 	
-	void onLoadTrees();
+	void onLoadResult();
 	
 	void onSaveFrames();
 	
@@ -92,14 +92,8 @@ private slots:
 	 
 private:
 	
-	void init();
-	
 	void clear();
 	
-	bool isLoaded();
-
-	void setCellWidget();
-
 private:
 	
 	Ui::window ui;
@@ -117,7 +111,7 @@ private:
 	//int m_currentTime;
 	
 	GLWidget* m_glWidget;
-	
+	CellWidget* m_cellWidget;	
 };
 
 #endif

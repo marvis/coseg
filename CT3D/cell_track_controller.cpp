@@ -342,7 +342,7 @@ CellTrack* CellTrackController::popState()
 	}
 	else
 	{
-		CellTrack* rt = *history.rbegin();
+		CellTrack* rt = history.back();
 		history.pop_back();
 		return rt;
 	}

@@ -787,6 +787,22 @@ vector<int> CellTrack::Cell::getVertices(ComponentTree* tree) const
 	}
 }
 
+int CellTrack::Cell::getSize() const
+{
+	if(m_vertices.empty())
+	{
+		return -1;
+	}
+	else return m_vertices.size();
+}
+/**************************************************************
+ * Volume will be calculated in a kind of formula
+ * ************************************************************/
+int CellTrack::Cell::getVolume() const
+{
+	return getSize();
+}
+
 int CellTrack::Cell::getCenter(int w, int h, int d) const
 {
 	vector<int> vertices = getVertices();
@@ -807,7 +823,19 @@ int CellTrack::Cell::getCenter(int w, int h, int d) const
 	
 	return mean_d * w * h + mean_h * w + mean_w;
 }
+// assert the color is same to track color
+unsigned int CellTrack::Cell::getColor() const
+{
+	if(m_color == 0)
+		return getTrack()->getColor();
+	else
+		return m_color;
+}
 
+void CellTrack::Cell::setColor(unsigned int color) 
+{
+	m_color = color;
+}
 /***************************************************************************
  * CellTrack::Frame
  * *************************************************************************/
@@ -1196,4 +1224,8 @@ int CellTrack::Track::cellNum() const
 		p = p->getNextCell();
 	}
 	return cell_num;
+}
+int CellTrack::Track::trackId() const
+{
+	return m_track_id;
 }

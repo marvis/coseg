@@ -30,23 +30,13 @@ AT3DVIEW::AT3DVIEW(QWidget* parent) : QWidget(parent), CellTrackController()
 	//step 2 : initialization
 	
 	m_glWidget = new GLWidget();
+	m_cellWidget = new CellWidget();
 	
-	QLayout * layout;
-	// when reopen, here is very important
-	if(ui.glGroupBox->layout()== NULL)
-	{
-		layout= new QGridLayout();
-		layout->addWidget(m_glWidget);
-		ui.glGroupBox->setLayout(layout);
-	}
-	else
-	{
-		layout=ui.glGroupBox->layout();
-		layout->addWidget(m_glWidget);
-	}
-	
-	init();
-	
+	QLayout * layout = new QVBoxLayout();
+	layout->addWidget(m_glWidget);
+	ui.glGroupBox->setLayout(layout);
+
+	ui.scrollArea->setWidget(m_cellWidget);	
 }
 
 /***************************************************
@@ -55,6 +45,24 @@ AT3DVIEW::AT3DVIEW(QWidget* parent) : QWidget(parent), CellTrackController()
 
 void AT3DVIEW::onOpen()
 {
+ // 1. open
+    QStringList fileList = QFileDialog::getOpenFileNames(
+                                             this,
+                                             "Choose files of time 1",
+                                             "",
+                                             "Images (*.png *.tif *.tiff *.jpg)");
+    if(fileList.size()==0)return;
+
+    if(! m_frames.empty())clear();
+
+    QStringList::iterator it;
+    vector<string> names;
+    for(it=fileList.begin();it!=fileList.end();it++)
+    {
+        QString tmp=*it;
+        names.push_back(tmp.toStdString());
+        cout<<tmp.toStdString().c_str()<<endl;
+    }
 }
 
 /************************************************
@@ -62,7 +70,7 @@ void AT3DVIEW::onOpen()
  ************************************************/
 
 //File Group
-void AT3DVIEW::onLoadTrees()
+void AT3DVIEW::onLoadResult()
 {
 
 }
@@ -171,26 +179,19 @@ void AT3DVIEW::onCheckBoxChanged()
  *******************************************/
 
 
-void AT3DVIEW::init()
-{
-}
-
 void AT3DVIEW::clear()
 {
+	while(!history.empty())
+	{
+		CellTrack* ct = history.back();
+		history.pop_back();
+		ct->releaseFrames();
+	}
+	if(!m_frames.empty())
+	{
+		releaseFrames();
+		releaseTracks();
+		releaseAllCells();
+	}
 }
 
-bool AT3DVIEW::isLoaded()
-{
-	return false;
-}
-
-//============================================
-// setCellWidget: set m_checkers according to m_cells
-//============================================
-void AT3DVIEW::setCellWidget()
-{
-}
-
-void AT3DVIEW::on_adjustRegionButton_clicked()
-{
-}

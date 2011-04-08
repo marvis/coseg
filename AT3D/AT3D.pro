@@ -9,31 +9,37 @@ INCLUDEPATH += .
 QT += opengl
 CONFIG += qt \
     debug
-LIBS += -ltiff -lGLEW -llpsolve55
+LIBS += -ltiff \
+    -lGLEW \
+    -llpsolve55
 
 # Input
 HEADERS += glwidget.h \
+    cellwidget.h \
     ../myalgorithms.h \
     at3d_view.h \
     ../component_tree.h \
     ui/filterDlg.h \
     ui/adjustregiondialog.h \
-	vsvr.h \
-	../CT3D/cell_track_controller.h \
-  	../CT3D/cell_track.h \
-  	../CT3D/palette.h
-
+    vsvr.h \
+    ../CT3D/cell_track_controller.h \
+    ../CT3D/cell_track.h \
+    ../CT3D/palette.h \
+    forms/createform.h
 FORMS += ui/at3d_view.ui \
     ui/filters.ui \
-    ui/adjustregiondialog.ui
+    ui/adjustregiondialog.ui \
+    forms/createform.ui
 SOURCES += glwidget.cpp \
+    cellwidget.cpp \
     ../myalgorithms.cpp \
     at3d_view.cpp \
     main.cpp \
     ../component_tree.cpp \
     ui/filterDlg.cpp \
     ui/adjustregiondialog.cpp \
-	vsvr.cpp \
-	../CT3D/cell_track_controller.cpp \
-  	../CT3D/cell_track.cpp \
-  	../CT3D/palette.cpp
+    vsvr.cpp \
+    ../CT3D/cell_track_controller.cpp \
+    ../CT3D/cell_track.cpp \
+    ../CT3D/palette.cpp \
+    forms/createform.cpp
