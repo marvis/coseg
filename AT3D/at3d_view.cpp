@@ -53,7 +53,7 @@ void AT3DVIEW::onOpen()
                                              "Images (*.png *.tif *.tiff *.jpg)");
     if(fileList.size()==0)return;
 
-    if(! m_frames.empty())clear();
+    if(celltrack != NULL)clear();
 
     QStringList::iterator it;
     vector<string> names;
@@ -187,11 +187,11 @@ void AT3DVIEW::clear()
 		history.pop_back();
 		ct->releaseFrames();
 	}
-	if(!m_frames.empty())
+	if(celltrack != NULL)
 	{
-		releaseFrames();
-		releaseTracks();
-		releaseAllCells();
+		celltrack->releaseFrames();
+		celltrack->releaseTracks();
+		celltrack->releaseAllCells();
 	}
 }
 

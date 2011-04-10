@@ -52,7 +52,7 @@ class CellTrackController
 		void undo();
 	private:
 		void setCellCenters();
-	private:
+	protected:
 		vector<CellTrack*> history;
 		CellTrack* celltrack;
 		map<CellTrack::Track*, bool> tracks_state; // affect by create choose undo operation
