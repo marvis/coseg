@@ -137,9 +137,9 @@ void CellTrackController::setPrev()
  * **********************************************************/
 unsigned char* CellTrackController::getTexData()
 {
-	int w = width();
-	int h = height();
-   	int d = depth();
+	int w = getWidth();
+	int h = getHeight();
+   	int d = getDepth();
 	unsigned char* image = new  unsigned char[3*w*h*d];
 	vector<CellTrack::Cell*> visable_cells = celltrack->getFrame(current_time)->getCells();
 	vector<CellTrack::Cell*>::iterator it = visable_cells.begin();
@@ -163,17 +163,17 @@ int CellTrackController::currentTime()
 	return current_time;
 }
 
-int CellTrackController::width()
+int CellTrackController::getWidth()
 {
 	return celltrack->getFrame(current_time)->width();
 }
 
-int CellTrackController::height()
+int CellTrackController::getHeight()
 {
 	return celltrack->getFrame(current_time)->height();
 }
 
-int CellTrackController::depth()
+int CellTrackController::getDepth()
 {
 	return celltrack->getFrame(current_time)->depth();
 }
@@ -184,9 +184,9 @@ CellTrack::Cell* CellTrackController::getClickedCell(int position)
 	{
 		setCellCenters();
 	}
-	int w = this->width();
-	int h = this->height();
-	int d = this->height();
+	int w = this->getWidth();
+	int h = this->getHeight();
+	int d = this->getDepth();
 	int mouse_w = position % w;
 	int mouse_h = (position /w ) % h;
 	int mouse_d = (position /w /h) % d;
@@ -370,9 +370,9 @@ void CellTrackController::undo()
 void CellTrackController::setCellCenters()
 {
 	assert(cell_centers.empty());
-	int w = this->width();
-	int h = this->height();
-	int d = this->depth();
+	int w = this->getWidth();
+	int h = this->getHeight();
+	int d = this->getDepth();
 	vector<CellTrack::Cell*> cells = celltrack->getFrame(current_time)->getCells();
 	vector<CellTrack::Cell*>::iterator it = cells.begin();
 	while(it != cells.end())

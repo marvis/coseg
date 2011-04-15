@@ -225,7 +225,7 @@ void CellTrack::setTracksColor()
 	}
 }
 
-void CellTrack::exportImages(char* prefix) const
+void CellTrack::exportImages(char* prefix, char* dir) const
 {
 	vector<Frame*>::const_iterator it = m_frames.begin();
 	int id = 0;
@@ -236,6 +236,7 @@ void CellTrack::exportImages(char* prefix) const
 	{
 		id++;
 		ostringstream oss(ostringstream::out);
+		if(dir != NULL) oss<< dir <<"/";
 		if(prefix != NULL) oss << prefix;
 		oss << id;
 		oss << ".tiff";
@@ -398,6 +399,7 @@ void CellTrack::releaseFrames()
 			delete *it;
 			it++;
 		}
+		m_frames.clear();
 	}
 }
 /************************************************************************
@@ -422,6 +424,7 @@ void CellTrack::releaseTracks()
 			delete *it;
 			it++;
 		}
+		m_tracks.clear();
 	}
 }
 /**************************************************************************
@@ -429,6 +432,24 @@ void CellTrack::releaseTracks()
  * ************************************************************************/
 void CellTrack::releaseAllCells()
 {
+	if(!m_tracks.empty())
+	{
+		vector<Track*>::iterator it = m_tracks.begin();
+		while(it != m_tracks.end())
+		{
+			Cell* p = (*it)->getStartCell();
+			while(p->getNextCell() != NULL) 
+			{
+				Cell* next_cell = p->getNextCell();
+				delete p;
+				p = next_cell;
+			}
+			delete p;
+			(*it)->setStartCell(NULL);
+			it++;
+		}
+	}
+	/*========== old implementation ============
 	int frame_num = frameNum();
 	for(int i = 0; i < frame_num; i++)
 	{
@@ -440,6 +461,7 @@ void CellTrack::releaseAllCells()
 			it++;
 		}
 	}
+	===========================================*/
 }
 
 bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2,vector<CellTrack::Frame*> &frames)
@@ -1203,6 +1225,11 @@ CellTrack::Track::Track()
 CellTrack::Cell* CellTrack::Track::getStartCell() const
 {
 	return m_entry_cell;
+}
+
+void CellTrack::Track::setStartCell(CellTrack::Cell* cell)
+{
+	m_entry_cell = cell;
 }
 
 //int CellTrack::Track::getColorId() const

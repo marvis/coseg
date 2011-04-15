@@ -48,10 +48,14 @@ void AT3DVIEW::onOpen()
 {
 	CreateDialog* createdlg = new CreateDialog();
 	createdlg->setModal(true);
-	createdlg->setCellTrackController(this);
-	connect(this, SIGNAL(setProgressValue(int)), createdlg, SLOT(onSetProgressValue(int)));
-	createdlg->exec();
-	//celltrack = createdlg->getCellTrack();
+	if(createdlg->exec() == QDialog::Accepted)
+	{
+		celltrack = createdlg->getCellTrack();
+		this->initTracksState(); // important
+		unsigned char* img = getTexData();
+		m_glWidget->loadTexture(img, this->getWidth(), this->getHeight(), this->getDepth(),3);
+		m_glWidget->updateGL();
+	}
 }
 
 /************************************************
@@ -184,49 +188,4 @@ void AT3DVIEW::clear()
 	}
 }
 
-bool AT3DVIEW::createCellTrack(vector<string> tree_files)
-{
-    return CellTrackController::createCellTrack(tree_files);
-}
 
-bool AT3DVIEW::createCellTrack(vector<string> image_files, int _min, int _max, int _single)
-{
-	if(_min > _max || _min < 0 || _single < 0 ) 
-	{
-		return false;
-	}
-	else
-	{
-		ComponentTree *tree = new ComponentTree();
-		vector<string> tree_files;
-		for(int i = 0; i < image_files.size(); i++)
-		{
-			emit setProgressValue(i);
-			tree->clear();
-			tree->create((char*) image_files[i].c_str(), _min, _max, _single);
-			//===============================================
-			string tree_file = image_files[i];
-			tree_file = tree_file.substr(0, tree_file.rfind("."));
-			tree_file.append(".bin.tree");
-			//===============================================
-			tree->save((const char*)tree_file.c_str());
-			tree_files.push_back(tree_file);
-		}
-		celltrack = new CellTrack();
-		bool rt = celltrack->createFromTrees(tree_files);
-		if(rt)
-		{
-			this->initTracksState();
-		}
-		/*
-		vector<char*>::iterator it = tree_files.begin();
-		while(it != tree_files.end())
-		{
-			delete (*it);
-			it++;
-		}
-		*/
-
-		return rt;
-	}
-}

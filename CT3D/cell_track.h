@@ -140,6 +140,7 @@ class CellTrack
 		public:
 			Track();
 			Cell* getStartCell() const;
+			void setStartCell(Cell*);
 			//int getColorId() const;
 			unsigned int getColor() const;
 			void setColor(unsigned int color);
@@ -158,21 +159,21 @@ class CellTrack
 
 	public:
 	CellTrack();
-	~CellTrack();
+	virtual	~CellTrack();
 	bool save(char* track_file);
 	bool save(ofstream& ofs, bool saveType);
 	bool load(char* track_file);              // todo: check beforehand
 	bool load(ifstream& ifs, bool saveType); 
 	bool reload(char* track_file);
 
-	bool createFromTrees(vector<char*> tree_files);
-	bool createFromTrees(vector<string> tree_files);
+	virtual bool createFromTrees(vector<char*> tree_files);
+	virtual bool createFromTrees(vector<string> tree_files);
 	bool createFromImages(vector<char*> img_results);
 	bool createFromImages(vector<string> img_results);
 	bool correspondToTrees(vector<char*> tree_files);         // used when cells are filtered
 	bool correspondToTrees(vector<string> tree_files);         // used when cells are filtered
 	void setTracksColor();
-	void exportImages(char* prefix = NULL) const;
+	void exportImages(char* prefix = NULL, char* dir = NULL) const;
 
 	//CellTrack* chooseLocally(vector<Track*>  tracks, int frame_id);
 	//CellTrack* chooseGlobally(vector<Track*>  tracks);
@@ -189,9 +190,9 @@ class CellTrack
 	unsigned int trackNum() const;
 
 	public:
+	void releaseAllCells();
 	void releaseFrames();
 	void releaseTracks();
-	void releaseAllCells();
 
 	static bool createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2,vector<Frame*> &frames );
 	static bool createFramesFromTrees(vector<char*> tree_files,vector<Frame*> &frames);

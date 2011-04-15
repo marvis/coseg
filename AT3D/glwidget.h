@@ -21,6 +21,7 @@ public:
     QSize sizeHint() const;
 
 	void loadTiff(QString);
+	void loadTexture(unsigned char* img, int width, int height, int depth, int channels);
 	void draw_cube();
 //! [0]
 

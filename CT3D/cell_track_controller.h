@@ -31,9 +31,9 @@ class CellTrackController
                 virtual void setPrev();
                 virtual unsigned char* getTexData(); // include mark information
                 virtual int currentTime();
-                virtual int width();
-                virtual int height();
-                virtual int depth();
+                virtual int getWidth();
+                virtual int getHeight();
+                virtual int getDepth();
 		
                 virtual CellTrack::Cell* getClickedCell(int position);
                 virtual vector<CellTrack::Cell*> getMarkedCells(); // get marked cells in current frame

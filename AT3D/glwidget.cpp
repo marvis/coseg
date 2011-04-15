@@ -223,10 +223,16 @@ void GLWidget::wheelEvent(QWheelEvent * event)
 	updateGL();
 }
 
-void GLWidget::loadTiff(QString file)
+
+void GLWidget::loadTexture(unsigned char* img, int width, int height, int depth, int channels)
 {
-	int channels = 0;
-	unsigned char * img = readtiff((char*)file.toStdString().c_str(),&tex_ni, &tex_nj, &tex_nk, &channels);	
+	if(width <= 0 || height <= 0 || depth <= 0 || channels <= 0 || img == NULL)
+	{
+		return;
+	}
+	tex_ni = width;
+	tex_nj = height;
+	tex_nk = depth;
 	std::cout<<"tex_ni = "<<tex_ni<<std::endl;
 	std::cout<<"tex_nj = "<<tex_nj<<std::endl;
 	std::cout<<"tex_nk = "<<tex_nk<<std::endl;
@@ -276,6 +282,14 @@ void GLWidget::loadTiff(QString file)
 	delete img;
 
 	force_reload = true;
+
+}
+
+void GLWidget::loadTiff(QString file)
+{
+	int channels = 0;
+	unsigned char * img = readtiff((char*)file.toStdString().c_str(),&tex_ni, &tex_nj, &tex_nk, &channels);	
+	loadTexture(img, tex_ni, tex_nj, tex_nk, channels);
 }
 
 void GLWidget::draw_cube()
