@@ -8,7 +8,9 @@
 #include <cassert>
 using namespace std;
 
+#ifndef INT_MAX
 #define INT_MAX       2147483647
+#endif
 
 CellTrackController::CellTrackController()
 {
@@ -16,13 +18,17 @@ CellTrackController::CellTrackController()
 	current_time = 0;
 }
 
-bool CellTrackController::createCellTrack(vector<char*> tree_files)
+CellTrackController::~CellTrackController()
+{
+}
+
+bool CellTrackController::createCellTrack(vector<string> tree_files)
 {
 	celltrack = new CellTrack();	
 	return celltrack->createFromTrees(tree_files);
 }
 
-bool CellTrackController::createCellTrack(vector<char*> image_files, int _min, int _max, int _single)
+bool CellTrackController::createCellTrack(vector<string> image_files, int _min, int _max, int _single)
 {
 	if(_min > _max || _min < 0 || _single < 0 ) 
 	{
@@ -31,19 +37,17 @@ bool CellTrackController::createCellTrack(vector<char*> image_files, int _min, i
 	else
 	{
 		ComponentTree *tree = new ComponentTree();
-		vector<char*> tree_files;
+		vector<string> tree_files;
 		for(int i = 0; i < image_files.size(); i++)
 		{
 			tree->clear();
-			tree->create(image_files[i], _min, _max, _single);
+			tree->create((char*) image_files[i].c_str(), _min, _max, _single);
 			//===============================================
-			char* tree_file = new char[200];
-			string str_file(image_files[i]);
-			str_file = str_file.substr(0, str_file.rfind("."));
-			str_file.append(".bin.tree");
-			strcpy(tree_file, str_file.c_str());
+			string tree_file = image_files[i];
+			tree_file = tree_file.substr(0, tree_file.rfind("."));
+			tree_file.append(".bin.tree");
 			//===============================================
-			tree->save((const char*)tree_file);
+			tree->save((const char*)tree_file.c_str());
 			tree_files.push_back(tree_file);
 		}
 		celltrack = new CellTrack();
@@ -52,18 +56,20 @@ bool CellTrackController::createCellTrack(vector<char*> image_files, int _min, i
 		{
 			this->initTracksState();
 		}
+		/*
 		vector<char*>::iterator it = tree_files.begin();
 		while(it != tree_files.end())
 		{
 			delete (*it);
 			it++;
 		}
+		*/
 
 		return rt;
 	}
 }
 
-bool CellTrackController::loadCellTrack(vector<char*> image_results, vector<char*> tree_files)
+bool CellTrackController::loadCellTrack(vector<string> image_results, vector<string> tree_files)
 {
 	celltrack = new CellTrack();
 	bool rt = celltrack->createFromImages(image_results);

@@ -732,7 +732,7 @@ bool ComponentTree::save(const char* treefile) const
 
 bool ComponentTree::save(ofstream& ofs, bool saveType) const
 {
-	cout<<"save type = "<<saveType<<endl;
+	//cout<<"save type = "<<saveType<<endl;
 	assert(m_numPixels > 0);
 	assert(m_numNodes > 0);
 	if(saveType == 0) // binary format save

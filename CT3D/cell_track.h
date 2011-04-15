@@ -166,8 +166,11 @@ class CellTrack
 	bool reload(char* track_file);
 
 	bool createFromTrees(vector<char*> tree_files);
+	bool createFromTrees(vector<string> tree_files);
 	bool createFromImages(vector<char*> img_results);
+	bool createFromImages(vector<string> img_results);
 	bool correspondToTrees(vector<char*> tree_files);         // used when cells are filtered
+	bool correspondToTrees(vector<string> tree_files);         // used when cells are filtered
 	void setTracksColor();
 	void exportImages(char* prefix = NULL) const;
 
@@ -195,7 +198,7 @@ class CellTrack
 	static bool createFramesFromImages(vector<char*> img_files,vector<Frame*> &frames );
 	static bool createTracksFromFrames(Frames & frames, vector<Track*> &tracks,int start_time = 0 );
 
-	private:
+	protected:
 	//int m_width;       // in Frame::m_width
 	//int m_height;
 	//int m_depth;

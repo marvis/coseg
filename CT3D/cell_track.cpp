@@ -27,6 +27,19 @@
 using namespace std;
 typedef ComponentTree::Node TNode;
 
+vector<char*> vec_chars(vector<string> & strings)
+{
+	vector<char*> chars_vec;
+	vector<string>::iterator it = strings.begin();
+	while(it != strings.end())
+	{
+		string str = *it;
+		chars_vec.push_back((char*)str.c_str());
+		it++;
+	}
+	return chars_vec;
+}
+
 /***************************************************************************
  * CellTrack construction function
  **************************************************************************/
@@ -130,6 +143,10 @@ bool CellTrack::reload(char* track_file)
 	return load(track_file);
 }
 
+bool CellTrack::createFromImages(vector<string> img_files)
+{
+	return createFromImages(vec_chars(img_files));
+}
 bool CellTrack::createFromImages(vector<char*> img_files)
 {
 	assert(m_frames.empty());
@@ -149,6 +166,10 @@ bool CellTrack::createFromImages(vector<char*> img_files)
 	return true;
 }
 
+bool CellTrack::correspondToTrees(vector<string> tree_files)
+{
+	return correspondToTrees(vec_chars(tree_files));
+}
 bool CellTrack::correspondToTrees(vector<char*> tree_files)
 {
 	assert(tree_files.size() == frameNum());
@@ -164,6 +185,10 @@ bool CellTrack::correspondToTrees(vector<char*> tree_files)
 	return true;
 }
 
+bool CellTrack::createFromTrees(vector<string> tree_files)
+{
+	return createFromTrees(vec_chars(tree_files));
+}
 bool CellTrack::createFromTrees(vector<char*> tree_files)
 {
 	assert(m_frames.empty());

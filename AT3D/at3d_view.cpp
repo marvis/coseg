@@ -11,6 +11,7 @@
 #include "../myalgorithms.h"
 #include "../component_tree.h"
 #include "ui/adjustregiondialog.h"
+#include "dialogs/createdialog.h"
 using namespace std;
 
 /************************************
@@ -45,24 +46,12 @@ AT3DVIEW::AT3DVIEW(QWidget* parent) : QWidget(parent), CellTrackController()
 
 void AT3DVIEW::onOpen()
 {
- // 1. open
-    QStringList fileList = QFileDialog::getOpenFileNames(
-                                             this,
-                                             "Choose files of time 1",
-                                             "",
-                                             "Images (*.png *.tif *.tiff *.jpg)");
-    if(fileList.size()==0)return;
-
-    if(celltrack != NULL)clear();
-
-    QStringList::iterator it;
-    vector<string> names;
-    for(it=fileList.begin();it!=fileList.end();it++)
-    {
-        QString tmp=*it;
-        names.push_back(tmp.toStdString());
-        cout<<tmp.toStdString().c_str()<<endl;
-    }
+	CreateDialog* createdlg = new CreateDialog();
+	createdlg->setModal(true);
+	createdlg->setCellTrackController(this);
+	connect(this, SIGNAL(setProgressValue(int)), createdlg, SLOT(onSetProgressValue(int)));
+	createdlg->exec();
+	//celltrack = createdlg->getCellTrack();
 }
 
 /************************************************
@@ -195,3 +184,49 @@ void AT3DVIEW::clear()
 	}
 }
 
+bool AT3DVIEW::createCellTrack(vector<string> tree_files)
+{
+    return CellTrackController::createCellTrack(tree_files);
+}
+
+bool AT3DVIEW::createCellTrack(vector<string> image_files, int _min, int _max, int _single)
+{
+	if(_min > _max || _min < 0 || _single < 0 ) 
+	{
+		return false;
+	}
+	else
+	{
+		ComponentTree *tree = new ComponentTree();
+		vector<string> tree_files;
+		for(int i = 0; i < image_files.size(); i++)
+		{
+			emit setProgressValue(i);
+			tree->clear();
+			tree->create((char*) image_files[i].c_str(), _min, _max, _single);
+			//===============================================
+			string tree_file = image_files[i];
+			tree_file = tree_file.substr(0, tree_file.rfind("."));
+			tree_file.append(".bin.tree");
+			//===============================================
+			tree->save((const char*)tree_file.c_str());
+			tree_files.push_back(tree_file);
+		}
+		celltrack = new CellTrack();
+		bool rt = celltrack->createFromTrees(tree_files);
+		if(rt)
+		{
+			this->initTracksState();
+		}
+		/*
+		vector<char*>::iterator it = tree_files.begin();
+		while(it != tree_files.end())
+		{
+			delete (*it);
+			it++;
+		}
+		*/
+
+		return rt;
+	}
+}

@@ -21,7 +21,8 @@ class AT3DVIEW : public QWidget, public CellTrackController
 	
 public:
 	AT3DVIEW(QWidget *parent = 0);
-
+        virtual bool createCellTrack(vector<string> image_files, int _min, int _max, int _single);
+        virtual bool createCellTrack(vector<string> tree_files);
 private slots:
 	/************************
 	 * File Group
@@ -93,7 +94,8 @@ private slots:
 private:
 	
 	void clear();
-	
+signals:
+	void setProgressValue(int);
 private:
 	
 	Ui::window ui;

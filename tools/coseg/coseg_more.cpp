@@ -13,7 +13,8 @@
 int main(int argc, char* argv[])
 {
 	CellTrack cell_track;
-	vector<char*> tree_files;
+	vector<string> tree_files;
+	//vector<char*> tree_files;
 	for(int i = 1; i < argc; i++)
 	{
 		tree_files.push_back(argv[i]);

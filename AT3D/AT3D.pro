@@ -19,27 +19,27 @@ HEADERS += glwidget.h \
     ../myalgorithms.h \
     at3d_view.h \
     ../component_tree.h \
-    ui/filterDlg.h \
-    ui/adjustregiondialog.h \
     vsvr.h \
     ../CT3D/cell_track_controller.h \
     ../CT3D/cell_track.h \
     ../CT3D/palette.h \
-    forms/createform.h
+    dialogs/createdialog.h \
+    dialogs/regionadjustdialog.h \
+    dialogs/filterdialog.h
 FORMS += ui/at3d_view.ui \
-    ui/filters.ui \
-    ui/adjustregiondialog.ui \
-    forms/createform.ui
+    dialogs/createdialog.ui \
+    dialogs/regionadjustdialog.ui \
+    dialogs/filterdialog.ui
 SOURCES += glwidget.cpp \
     cellwidget.cpp \
     ../myalgorithms.cpp \
     at3d_view.cpp \
     main.cpp \
     ../component_tree.cpp \
-    ui/filterDlg.cpp \
-    ui/adjustregiondialog.cpp \
     vsvr.cpp \
     ../CT3D/cell_track_controller.cpp \
     ../CT3D/cell_track.cpp \
     ../CT3D/palette.cpp \
-    forms/createform.cpp
+    dialogs/createdialog.cpp \
+    dialogs/regionadjustdialog.cpp \
+    dialogs/filterdialog.cpp
