@@ -732,8 +732,40 @@ void CellTrack::Cell::setTrack(CellTrack::Track* track)
 	m_track = track;
 }
 
-void CellTrack::Cell::draw(unsigned char* image, int w, int h, int d) const
+/**
+ * normally c = 3
+ * **/
+void CellTrack::Cell::draw(unsigned char* image, int w, int h, int d, int c, ComponentTree* tree) const
 {
+	vector<int> vertices = getVertices(tree);
+	if(vertices.empty()) return;
+	vector<int>::iterator it = vertices.begin();
+	while(it != vertices.end())
+	{
+		int index = (*it) * c;
+		int color = this->getColor();
+		unsigned char r = color % 256;
+		unsigned char g = (color / 256)%256;
+		unsigned char b = (color / 256 / 256)%256;
+		if(c == 1)
+		{
+			image[index] =(unsigned char)( ((float)r + (float)g + (float)b)/3.0);
+		}
+		else if(c == 3)
+		{
+			image[index] = r;
+			image[index + 1] = g;
+			image[index + 2] = b;
+		}
+		else if(c == 4)
+		{
+			image[index] = r;
+			image[index + 1] = g;
+			image[index + 2] = b;
+			image[index + 3] = 255;
+		}
+		it++;
+	}
 }
 
 void CellTrack::Cell::drawMarker(unsigned char* image, int w, int h, int d) const

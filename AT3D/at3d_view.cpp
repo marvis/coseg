@@ -52,6 +52,8 @@ void AT3DVIEW::onOpen()
 	{
 		celltrack = createdlg->getCellTrack();
 		this->initTracksState(); // important
+		current_time = 0;
+		//celltrack->getFrame(current_time);
 		unsigned char* img = getTexData();
 		m_glWidget->loadTexture(img, this->getWidth(), this->getHeight(), this->getDepth(),3);
 		m_glWidget->updateGL();

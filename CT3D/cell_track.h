@@ -44,7 +44,7 @@ class CellTrack
 			Track* getTrack() const;
 			void setTrack(Track*);
 			//double meanHeight() const;
-			void draw(unsigned char* image, int w, int h, int d) const;
+			void draw(unsigned char* image, int w, int h, int d, int c=3, ComponentTree* tree = NULL) const;
 			void drawMarker(unsigned char* image, int w, int h, int d) const;
 
 			vector<int>  getCenterArea() const;
