@@ -141,6 +141,7 @@ unsigned char* CellTrackController::getTexData()
 	int h = getHeight();
    	int d = getDepth();
 	unsigned char* image = new  unsigned char[3*w*h*d];
+	for(int i = 0; i < 3*w*h*d; i++) image[i] = 0;
 	vector<CellTrack::Cell*> visable_cells = celltrack->getFrame(current_time)->getCells();
 	vector<CellTrack::Cell*>::iterator it = visable_cells.begin();
 	while(it != visable_cells.end())

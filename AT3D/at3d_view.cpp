@@ -12,6 +12,7 @@
 #include "../component_tree.h"
 #include "ui/adjustregiondialog.h"
 #include "dialogs/createdialog.h"
+#include "extends/cell_track_ex.h"
 using namespace std;
 
 /************************************
@@ -47,13 +48,14 @@ AT3DVIEW::AT3DVIEW(QWidget* parent) : QWidget(parent), CellTrackController()
 void AT3DVIEW::onOpen()
 {
 	CreateDialog* createdlg = new CreateDialog();
+	CellTrackEX* cell_track_ex = new CellTrackEX();
+	createdlg->setCellTrack(cell_track_ex);
 	createdlg->setModal(true);
 	if(createdlg->exec() == QDialog::Accepted && createdlg->getCellTrack() != NULL)
 	{
 		celltrack = createdlg->getCellTrack();
 		this->initTracksState(); // important
 		current_time = 0;
-		//celltrack->getFrame(current_time);
 		unsigned char* img = getTexData();
 		m_glWidget->loadTexture(img, this->getWidth(), this->getHeight(), this->getDepth(),3);
 		m_glWidget->updateGL();
@@ -122,18 +124,34 @@ void AT3DVIEW::onViewTree()
 //Control Group
 void AT3DVIEW::onFirst()
 {
+	setFirst();
+	ui.glGroupBox->setTitle(tr("Time : %1").arg(current_time + 1));
+	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
+	m_glWidget->updateGL();
 }
 
 void AT3DVIEW::onLast()
 {
+	setLast();
+	ui.glGroupBox->setTitle(tr("Time : %1").arg(current_time + 1));
+	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
+	m_glWidget->updateGL();
 }
 
 void AT3DVIEW::onPrevious()
 {
+	setPrev();
+	ui.glGroupBox->setTitle(tr("Time : %1").arg(current_time + 1));
+	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
+	m_glWidget->updateGL();
 }
 
 void AT3DVIEW::onNext()
 {
+	setNext();
+	ui.glGroupBox->setTitle(tr("Time : %1").arg(current_time + 1));
+	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
+	m_glWidget->updateGL();
 }
 
 //Cell Widget

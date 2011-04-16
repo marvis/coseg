@@ -27,8 +27,8 @@ bool CellTrackEX::createFramesFromTrees(vector<char*> tree_files,vector<CellTrac
 		assert(frames.size() == 2);
 		Frame* frame1 = frames[0];
 		Frame* frame2 = frames[1];
-		frame1->releaseTree(tree_files[0]);
-		frame2->releaseTree(tree_files[1]);
+		//frame1->releaseTree(tree_files[0]);
+		//frame2->releaseTree(tree_files[1]);
 		return rt;
 	}
 
@@ -56,11 +56,11 @@ bool CellTrackEX::createFramesFromTrees(vector<char*> tree_files,vector<CellTrac
 
 		frames[i] = two_frames[0];
 		frames[i]->mergePrevFrame(prev_frame);
-		frames[i]->releaseTree(tree_files[i]);          // if space is not enough
+		//frames[i]->releaseTree(tree_files[i]);          // if space is not enough
 		prev_frame = two_frames[1];
 	}
 	frames[i] = prev_frame;
-	frames[i]->releaseTree(tree_files[i]);
+	//frames[i]->releaseTree(tree_files[i]);
 	return true;
 }
 bool CellTrackEX::createFramesFromImages(vector<char*> img_files,vector<CellTrack::Frame*> &frames )

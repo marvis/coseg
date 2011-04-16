@@ -288,7 +288,7 @@ void CreateDialog::on_startTrackingButton_clicked()
         }
 		ui->progressBar->setValue(2*m_filelist.size() - 1);
 		QMessageBox::information(this,tr("Create Finished"),tr("Create Successfully!"));
-        return;
+        return QDialog::accept();
     }
     else
     {

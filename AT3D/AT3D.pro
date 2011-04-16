@@ -25,7 +25,8 @@ HEADERS += glwidget.h \
     ../CT3D/palette.h \
     dialogs/createdialog.h \
     dialogs/regionadjustdialog.h \
-    dialogs/filterdialog.h
+    dialogs/filterdialog.h \
+	extends/cell_track_ex.h
 FORMS += ui/at3d_view.ui \
     dialogs/createdialog.ui \
     dialogs/regionadjustdialog.ui \
@@ -42,4 +43,5 @@ SOURCES += glwidget.cpp \
     ../CT3D/palette.cpp \
     dialogs/createdialog.cpp \
     dialogs/regionadjustdialog.cpp \
-    dialogs/filterdialog.cpp
+    dialogs/filterdialog.cpp \
+	extends/cell_track_ex.cpp
