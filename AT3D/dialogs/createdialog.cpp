@@ -1,6 +1,7 @@
 #include "createdialog.h"
 #include "ui_createdialog.h"
 #include "../../CT3D/cell_track.h"
+#include "../extends/cell_track_ex.h"
 #include <QtGui>
 #include <QFileDialog>
 
@@ -14,6 +15,13 @@ bool isInt(QString str)
     return true;
 }
 
+QString getFileName(QString str)
+{
+	if(str.contains(QChar('\\'))) return str.right(str.size() - str.lastIndexOf(QChar('\\')) - 1);
+	else if(str.contains(QChar('/'))) return str.right(str.size() - str.lastIndexOf(QChar('/')) - 1);
+	else return str;
+}
+
 CreateDialog::CreateDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::CreateDialog)
@@ -24,13 +32,20 @@ CreateDialog::CreateDialog(QWidget *parent) :
 	ui->exportButton->setEnabled(false);
 	ui->exportButton->setHidden(true);
 	connect(this,SIGNAL(setProgressValue(int)), this, SLOT(onSetProgressValue(int)));
-	m_celltrack = new CellTrack();
+	//m_celltrack = new CellTrack();
+	m_celltrack = NULL;
 }
 
 CreateDialog::~CreateDialog()
 {
     delete ui;
 }
+void CreateDialog::setCellTrack(CellTrack* celltrack)
+{
+	m_celltrack = celltrack;
+	connect((CellTrackEX*)celltrack, SIGNAL(setProgressValue(int)), this, SLOT(onSetProgressValue(int)));
+}
+
 CellTrack* CreateDialog::getCellTrack()
 {
 	return m_celltrack;
@@ -104,16 +119,27 @@ void CreateDialog::setExportButton()
 }
 void CreateDialog::onSetProgressValue(int value)
 {
-	if(value >= m_filelist.size()) return;
 	ui->progressBar->setValue(value+1);
-	//QString output = ui->filesListEditor->toPlainText();
-	//output += tr("\n create component tree %1").arg(value);
-	//ui->filesListEditor->setText(output);
-	QString str = m_filelist.at(value);
-	str = str.left(str.lastIndexOf("."));
-	str = str + tr(".bin.tree");
-	ui->progressLabel->setText(tr("create component tree %1").arg(str));
-
+	if(value < m_filelist.size())
+	{
+		QString str = m_filelist.at(value);
+		str = str.left(str.lastIndexOf("."));
+		str = str + tr(".bin.tree");
+		str = getFileName(str);
+		ui->progressLabel->setText(tr("create component tree '%1'").arg(str));
+	}
+	else
+	{
+		QString str1 = m_filelist.at(value - m_filelist.size());
+		str1 = str1.left(str1.lastIndexOf("."));
+		str1 = str1 + tr(".bin.tree");
+		str1 = getFileName(str1);
+		QString str2 = m_filelist.at(value + 1 - m_filelist.size());
+		str2 = str2.left(str2.lastIndexOf("."));
+		str2 = str2 + tr(".bin.tree");
+		str2 = getFileName(str2);
+		ui->progressLabel->setText(tr("tree assignment between '%1' and '%2'").arg(str1).arg(str2));
+	}
 }
 
 
@@ -164,8 +190,55 @@ void CreateDialog::on_openFilesButton_clicked()
 
 void CreateDialog::accept()
 {
-    if(checkValid())
+	if(checkValid())
+	{ 
+		if(m_celltrack == NULL)
+		{
+			QMessageBox::question(this, "","Please click \"Start Tracking\" button first!");
+			return;
+		}
+		else return QDialog::accept();
+	}
+	else 
+		ui->startTrackingButton->click();
+}
+
+void CreateDialog::reject()
+{
+	if(checkValid() && m_celltrack != NULL)
 	{
+		int rt = QMessageBox::information(this, "Cancel","Are you sure to cancel? \n The tracking result will be discarded.", QMessageBox::Yes|QMessageBox::No);
+		if(rt == QMessageBox::Yes) return QDialog::reject();
+		else return;
+	}
+	else return QDialog::reject();
+}
+
+
+void CreateDialog::on_exportButton_clicked()
+{
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
+                                                     "",
+                                                     QFileDialog::ShowDirsOnly);
+    if(dir != tr("")) m_celltrack->exportImages((char*)"",(char*)dir.toStdString().c_str());
+}
+
+void CreateDialog::on_startTrackingButton_clicked()
+{
+    if(checkValid())
+    {
+            ui->progressBar->setMinimum(0);
+            ui->progressBar->setMaximum(2*m_filelist.size()-1);
+            ui->progressBar->show();
+            ui->progressLabel->show();
+        if(m_celltrack == NULL) m_celltrack = new CellTrack();
+        else
+        {
+            m_celltrack->releaseFrames();
+            m_celltrack->releaseAllCells();
+            m_celltrack->releaseTracks();
+        }
+
         vector<string> filelist;
         QStringList::iterator it = m_filelist.begin();
         while(it != m_filelist.end())
@@ -176,73 +249,58 @@ void CreateDialog::accept()
         }
         if(this->isFromTrees())
         {
-			vector<string> & tree_files = filelist;
-			m_celltrack->releaseFrames();
-			m_celltrack->releaseAllCells();
-			m_celltrack->releaseTracks();
+            ui->progressBar->setMinimum(m_filelist.size());
+            vector<string> & tree_files = filelist;
             if(!m_celltrack->createFromTrees(tree_files))
             {
                 QMessageBox::information(this,tr("Create Error"),tr("Unable to create from tree files!"));
             }
-			else ui->exportButton->setEnabled(true);
+            else ui->exportButton->setEnabled(true);
         }
         else
         {
-			//ui->progressBar->setVisible(true);
-			ui->progressBar->setMinimum(0);
-			ui->progressBar->setMaximum(filelist.size());
-			ui->progressBar->show();
-			ui->progressLabel->show();
             int min = this->getMinThresh();
             int max = this->getMaxThresh();
             int single = this->getSingleThresh();
 
-			vector<string> & image_files = filelist;
-			ComponentTree * tree = new ComponentTree();
-			vector<string> tree_files;
-			for(int i = 0; i < image_files.size(); i++)
-			{
-				emit setProgressValue(i);
-				tree->clear();
-				tree->create((char*) image_files[i].c_str(), min, max, single);
-				//===============================================
-				string tree_file = image_files[i];
-				tree_file = tree_file.substr(0, tree_file.rfind("."));
-				tree_file.append(".bin.tree");
-				//===============================================
-				tree->save((const char*)tree_file.c_str());
-				tree_files.push_back(tree_file);
-			}
-			m_celltrack->releaseFrames();
-			m_celltrack->releaseAllCells();
-			m_celltrack->releaseTracks();
-        	if(! m_celltrack->createFromTrees(tree_files))
+            vector<string> & image_files = filelist;
+            ComponentTree * tree = new ComponentTree();
+            vector<string> tree_files;
+            for(int i = 0; i < image_files.size(); i++)
+            {
+                emit setProgressValue(i);
+                tree->clear();
+                tree->create((char*) image_files[i].c_str(), min, max, single);
+                //===============================================
+                string tree_file = image_files[i];
+                tree_file = tree_file.substr(0, tree_file.rfind("."));
+                tree_file.append(".bin.tree");
+                //===============================================
+                tree->save((const char*)tree_file.c_str());
+                tree_files.push_back(tree_file);
+            }
+
+            if(! m_celltrack->createFromTrees(tree_files))
             {
                 QMessageBox::information(this,tr("Create Error"),tr("Unable to create from image files!"));
             }
-			else ui->exportButton->setEnabled(true);
+            else ui->exportButton->setEnabled(true);
         }
-		return QDialog::accept();
-	}
+		ui->progressBar->setValue(2*m_filelist.size() - 1);
+		QMessageBox::information(this,tr("Create Finished"),tr("Create Successfully!"));
+        return;
+    }
     else
     {
         QMessageBox::information(this, tr("Invalid Information"),tr("Please Check Your Input!"));
         if(ui->fromImagesButton->isChecked())
-         {
-             QString minStr = ui->minEditor->text();
-             QString maxStr = ui->maxEditor->text();
-             QString singleStr = ui->singleEditor->text();
-             if(!isInt(minStr)) ui->minEditor->setText(tr(""));
-             if(!isInt(maxStr)) ui->maxEditor->setText(tr(""));
-             if(!isInt(singleStr)) ui->singleEditor->setText(tr(""));
-         }
+        {
+            QString minStr = ui->minEditor->text();
+            QString maxStr = ui->maxEditor->text();
+            QString singleStr = ui->singleEditor->text();
+            if(!isInt(minStr)) ui->minEditor->setText(tr(""));
+            if(!isInt(maxStr)) ui->maxEditor->setText(tr(""));
+            if(!isInt(singleStr)) ui->singleEditor->setText(tr(""));
+        }
     }
-}
-
-void CreateDialog::on_exportButton_clicked()
-{
-    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
-                                                     "",
-                                                     QFileDialog::ShowDirsOnly);
-    m_celltrack->exportImages((char*)"",(char*)dir.toStdString().c_str());
 }

@@ -14,12 +14,14 @@ LIBS += -ltiff \
 
 # Input
 HEADERS += ../createdialog.h \
+			../../extends/cell_track_ex.h \
            ../../../CT3D/cell_track_controller.h \
            ../../../CT3D/cell_track.h \
            ../../../CT3D/palette.h \
            ../../../component_tree.h \
            ../../../myalgorithms.h 
 SOURCES += main.cpp \
+			../../extends/cell_track_ex.cpp \
            ../createdialog.cpp \
            ../../../CT3D/cell_track_controller.cpp \
            ../../../CT3D/cell_track.cpp \

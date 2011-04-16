@@ -145,7 +145,7 @@ unsigned char* CellTrackController::getTexData()
 	vector<CellTrack::Cell*>::iterator it = visable_cells.begin();
 	while(it != visable_cells.end())
 	{
-		(*it)->draw(image, w, h, d, 3, celltrack->getFrame(current_time)->getTree());
+		(*it)->draw(image,/* w, h, d, 3,*/ celltrack->getFrame(current_time)->getTree());
 		it++;
 	}
 	cout<<"cell num = "<<visable_cells.size()<<endl;

@@ -48,7 +48,7 @@ void AT3DVIEW::onOpen()
 {
 	CreateDialog* createdlg = new CreateDialog();
 	createdlg->setModal(true);
-	if(createdlg->exec() == QDialog::Accepted)
+	if(createdlg->exec() == QDialog::Accepted && createdlg->getCellTrack() != NULL)
 	{
 		celltrack = createdlg->getCellTrack();
 		this->initTracksState(); // important

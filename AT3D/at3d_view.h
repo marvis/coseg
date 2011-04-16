@@ -9,7 +9,7 @@
 #include "../CT3D/cell_track_controller.h"
 #include "../component_tree.h"
 #include "ui_at3d_view.h"
-#include "./ui/filterDlg.h"
+//#include "./ui/filterDlg.h"
 using namespace std;
 
 //==================================================

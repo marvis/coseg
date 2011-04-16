@@ -2,6 +2,7 @@
 #define CREATEDIALOG_H
 
 #include "../../CT3D/cell_track.h"
+//#include "../extends/cell_track_ex.h"
 #include <QDialog>
 #include <QStringList>
 
@@ -15,6 +16,7 @@ public:
     CreateDialog(QWidget *parent = 0);
     ~CreateDialog();
     bool checkValid();
+	void setCellTrack(CellTrack* cell_track);
 	CellTrack* getCellTrack();
     int getMinThresh();
     int getMaxThresh();
@@ -34,10 +36,12 @@ signals:
 public slots:
 	void onSetProgressValue(int);
 private slots:
+    void on_startTrackingButton_clicked();
     void on_exportButton_clicked();
     void on_openFilesButton_clicked();
     void on_fromTreesButton_clicked(bool checked);
     void on_fromImagesButton_clicked(bool checked);
     void accept();
+	void reject();
 };
 #endif // CREATEDIALOG_H
