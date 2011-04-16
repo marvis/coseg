@@ -44,7 +44,7 @@ class CellTrack
 			Track* getTrack() const;
 			void setTrack(Track*);
 			//double meanHeight() const;
-			void draw(unsigned char* image, int w, int h, int d, int c=3, ComponentTree* tree = NULL) const;
+			void draw(unsigned char* image,/* int w, int h, int d, int c=3,*/ ComponentTree* tree = NULL) const;
 			void drawMarker(unsigned char* image, int w, int h, int d) const;
 
 			vector<int>  getCenterArea() const;
@@ -194,10 +194,10 @@ class CellTrack
 	void releaseFrames();
 	void releaseTracks();
 
-	static bool createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2,vector<Frame*> &frames );
-	static bool createFramesFromTrees(vector<char*> tree_files,vector<Frame*> &frames);
-	static bool createFramesFromImages(vector<char*> img_files,vector<Frame*> &frames );
-	static bool createTracksFromFrames(Frames & frames, vector<Track*> &tracks,int start_time = 0 );
+	virtual /*static*/ bool createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2,vector<Frame*> &frames );
+	virtual /*static*/ bool createFramesFromTrees(vector<char*> tree_files,vector<Frame*> &frames);
+	virtual /*static*/ bool createFramesFromImages(vector<char*> img_files,vector<Frame*> &frames );
+	virtual /*static*/ bool createTracksFromFrames(Frames & frames, vector<Track*> &tracks,int start_time = 0 );
 
 	protected:
 	//int m_width;       // in Frame::m_width

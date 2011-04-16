@@ -735,8 +735,9 @@ void CellTrack::Cell::setTrack(CellTrack::Track* track)
 /**
  * normally c = 3
  * **/
-void CellTrack::Cell::draw(unsigned char* image, int w, int h, int d, int c, ComponentTree* tree) const
+void CellTrack::Cell::draw(unsigned char* image, /*int w, int h, int d, int c,*/ ComponentTree* tree) const
 {
+	int c = 3;
 	vector<int> vertices = getVertices(tree);
 	if(vertices.empty()) return;
 	vector<int>::iterator it = vertices.begin();
@@ -1065,18 +1066,25 @@ void CellTrack::Frame::mergePrevFrame(CellTrack::Frame* prev_frame)
 	{
 		int id1 = matrix1[i];
 		int id2 = matrix2[i];
+		// if overlab then set true
 		if(id1 != -1 && id2 != -1) weight[id1*cells2Num + id2] = true;
 	}
 	for(int i = 0; i < cells1Num; i++)
 	{
+		// find which j is correspond to i
 		int sum = 0;
 		int the_j = -1;
 		for(int j = 0; j < cells2Num; j++) 
 		{
 			sum += weight[i*cells2Num + j];
-			if(weight[i*cells2Num + j] && the_j == -1) the_j = j;
+			//if(weight[i*cells2Num + j] && the_j == -1) the_j = j;
+			if(weight[i*cells2Num + j]) 
+			{
+				if(j > the_j) the_j = j;
+			}
 		}
-		assert(sum <= 1);
+		//assert(sum <= 1);
+		if(sum > 1) cout<<"sum : "<< sum<<endl;
 		if(sum)
 		{
 			assert(tree != NULL);
