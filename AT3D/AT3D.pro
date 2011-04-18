@@ -14,12 +14,11 @@ LIBS += -ltiff \
     -llpsolve55
 
 # Input
-HEADERS += glwidget.h \
-    cellwidget.h \
+HEADERS += widgets/glwidget.h \
+    widgets/cellwidget.h \
     ../myalgorithms.h \
     at3d_view.h \
     ../component_tree.h \
-    vsvr.h \
     ../CT3D/cell_track_controller.h \
     ../CT3D/cell_track.h \
     ../CT3D/palette.h \
@@ -27,17 +26,16 @@ HEADERS += glwidget.h \
     dialogs/regionadjustdialog.h \
     dialogs/filterdialog.h \
 	extends/cell_track_ex.h
-FORMS += ui/at3d_view.ui \
+FORMS += widgets/at3d_view.ui \
     dialogs/createdialog.ui \
     dialogs/regionadjustdialog.ui \
     dialogs/filterdialog.ui
-SOURCES += glwidget.cpp \
-    cellwidget.cpp \
+SOURCES += widgets/glwidget.cpp \
+    widgets/cellwidget.cpp \
     ../myalgorithms.cpp \
     at3d_view.cpp \
     main.cpp \
     ../component_tree.cpp \
-    vsvr.cpp \
     ../CT3D/cell_track_controller.cpp \
     ../CT3D/cell_track.cpp \
     ../CT3D/palette.cpp \

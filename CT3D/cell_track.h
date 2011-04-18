@@ -44,10 +44,10 @@ class CellTrack
 			Track* getTrack() const;
 			void setTrack(Track*);
 			//double meanHeight() const;
-			void draw(unsigned char* image,/* int w, int h, int d, int c=3,*/ ComponentTree* tree = NULL) const;
-			void drawMarker(unsigned char* image, int w, int h, int d) const;
+			void draw(unsigned char* image,/* int w, int h, int d, int c=3,*/ ComponentTree* tree = NULL);
+			void drawMarker(unsigned char* image, int w, int h, int d, ComponentTree* tree);
 
-			vector<int>  getCenterArea() const;
+			vector<int>&  getCenterArea(int width, int height, int depth, ComponentTree* tree);
 			void setCenterArea();
 
 			TNode* getFirNode(ComponentTree*) const;                    // the first alignment result
@@ -70,10 +70,10 @@ class CellTrack
 			Cell* getNextCell() const;
 			void  setNextCell(Cell*);
 
-			vector<int> getVertices(ComponentTree* tree = NULL) const;
+			vector<int>& getVertices(ComponentTree* tree = NULL);
 			int getVolume() const;
 			int getSize() const;
-			int getCenter(int w, int h, int d) const;
+			void getCenter(float & mean_w, float& mean_h, float & mean_d, int w, int h, int d);
 
 			unsigned int getColor() const;
 			void setColor(unsigned int color);
@@ -86,6 +86,7 @@ class CellTrack
 			Cell*  m_prev_cell;
 			Cell*  m_next_cell;
 			vector<int>    m_vertices;	          // seldom set this value
+			vector<int> m_center_area;
 
 			Track* m_track;              // used when in choose and remove operation
 			unsigned int m_color; // used only in createFromImages

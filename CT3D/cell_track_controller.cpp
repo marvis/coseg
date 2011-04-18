@@ -38,7 +38,7 @@ bool CellTrackController::createCellTrack(vector<string> image_files, int _min, 
 	{
 		ComponentTree *tree = new ComponentTree();
 		vector<string> tree_files;
-		for(int i = 0; i < image_files.size(); i++)
+		for(int i = 0; i < (int)image_files.size(); i++)
 		{
 			tree->clear();
 			tree->create((char*) image_files[i].c_str(), _min, _max, _single);
@@ -109,7 +109,7 @@ void CellTrackController::setLast()
 
 void CellTrackController::setNext()
 {
-	if(current_time == celltrack->frameNum() - 1)
+	if(current_time == (int)celltrack->frameNum() - 1)
 	{
 	}
 	else
@@ -134,6 +134,7 @@ void CellTrackController::setPrev()
 }
 /************************************************************
  * Extract 3d texture of current frame
+ * Including the marked area
  * **********************************************************/
 unsigned char* CellTrackController::getTexData()
 {
@@ -144,17 +145,18 @@ unsigned char* CellTrackController::getTexData()
 	for(int i = 0; i < 3*w*h*d; i++) image[i] = 0;
 	vector<CellTrack::Cell*> visable_cells = celltrack->getFrame(current_time)->getCells();
 	vector<CellTrack::Cell*>::iterator it = visable_cells.begin();
+	ComponentTree* tree = celltrack->getFrame(current_time)->getTree();
 	while(it != visable_cells.end())
 	{
-		(*it)->draw(image,/* w, h, d, 3,*/ celltrack->getFrame(current_time)->getTree());
+		(*it)->draw(image,/* w, h, d, 3,*/ tree);
 		it++;
 	}
-	cout<<"cell num = "<<visable_cells.size()<<endl;
+	//cout<<"cell num = "<<visable_cells.size()<<endl;
 	vector<CellTrack::Cell*> marked_cells = getMarkedCells();
 	it = marked_cells.begin();
 	while(it != marked_cells.end())
 	{
-		(*it)->drawMarker(image, w, h, d);
+		(*it)->drawMarker(image, w, h, d, tree);
 		it++;
 	}
 	return image;
@@ -379,8 +381,9 @@ void CellTrackController::setCellCenters()
 	vector<CellTrack::Cell*>::iterator it = cells.begin();
 	while(it != cells.end())
 	{
-		int center = (*it)->getCenter(w, h, d);
-		cell_centers[*it] = center;
+		float mean_x, mean_y, mean_z;
+		 (*it)->getCenter(mean_x, mean_y, mean_z, w, h, d);
+		cell_centers[*it] = (int)((int)(mean_z + 0.5) * w * h + (int)(mean_y + 0.5) * w + (int)(mean_x + 0.5));
 		it++;
 	}
 }

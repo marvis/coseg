@@ -24,6 +24,10 @@
 #include <cstring>
 #include "lp_lib.h"
 
+#ifndef INT_MAX
+#define INT_MAX       2147483647
+#endif
+
 using namespace std;
 typedef ComponentTree::Node TNode;
 
@@ -173,7 +177,7 @@ bool CellTrack::correspondToTrees(vector<string> tree_files)
 bool CellTrack::correspondToTrees(vector<char*> tree_files)
 {
 	assert(tree_files.size() == frameNum());
-	for(int i = 0; i < frameNum(); i++)
+	for(int i = 0; i < (int)frameNum(); i++)
 	{
 		ComponentTree* tree = new ComponentTree(tree_files[i]);
 		if(!m_frames[i]->correspondToTree(tree))
@@ -324,7 +328,7 @@ CellTrack* CellTrack::remove(vector<CellTrack::Track*> tracks)
 {
 	set<Track*> set_tracks(tracks.begin(), tracks.end());
 	vector<Track*> rev_tracks;
-	for(int i = 0; i < this->trackNum(); i++)
+	for(int i = 0; i < (int)this->trackNum(); i++)
 	{
 		Track* track = this->getTrack(i);
 		if(set_tracks.find(track) == set_tracks.end()) rev_tracks.push_back(track);
@@ -340,7 +344,7 @@ CellTrack* CellTrack::clip(int frame_start_id, int frame_end_id)
 {
 	assert(frame_start_id >= 0 && 
 			frame_start_id <= frame_end_id &&
-			frame_end_id <= frameNum());
+			frame_end_id <= (int)frameNum());
 
 	CellTrack* ct = new CellTrack();
 	ct->m_frames.resize(frame_end_id - frame_start_id);
@@ -368,14 +372,14 @@ CellTrack* CellTrack::clip(int frame_start_id, int frame_end_id)
 CellTrack::Frame* CellTrack::getFrame(int time) const
 {
 	assert(! m_frames.empty());
-	assert(time < this->frameNum());
+	assert(time < (int)this->frameNum());
 	return m_frames[time];
 }
 
 CellTrack::Track* CellTrack::getTrack(int index) const
 {
 	assert(! m_tracks.empty());
-	assert(index < this->trackNum());
+	assert(index < (int)this->trackNum());
 	return m_tracks[index];
 }
 
@@ -735,48 +739,97 @@ void CellTrack::Cell::setTrack(CellTrack::Track* track)
 /**
  * normally c = 3
  * **/
-void CellTrack::Cell::draw(unsigned char* image, /*int w, int h, int d, int c,*/ ComponentTree* tree) const
+void CellTrack::Cell::draw(unsigned char* image, /*int w, int h, int d, int c,*/ ComponentTree* tree)
 {
-	int c = 3;
-	vector<int> vertices = getVertices(tree);
+	vector<int> & vertices = getVertices(tree);
 	if(vertices.empty()) return;
 	vector<int>::iterator it = vertices.begin();
+	int color = this->getColor();
+	unsigned char r = color % 256;
+	unsigned char g = (color / 256)%256;
+	unsigned char b = (color / 256 / 256)%256;
 	while(it != vertices.end())
 	{
-		int index = (*it) * c;
-		int color = this->getColor();
-		unsigned char r = color % 256;
-		unsigned char g = (color / 256)%256;
-		unsigned char b = (color / 256 / 256)%256;
-		if(c == 1)
-		{
-			image[index] =(unsigned char)( ((float)r + (float)g + (float)b)/3.0);
-		}
-		else if(c == 3)
-		{
-			image[index] = r;
-			image[index + 1] = g;
-			image[index + 2] = b;
-		}
-		else if(c == 4)
-		{
-			image[index] = r;
-			image[index + 1] = g;
-			image[index + 2] = b;
-			image[index + 3] = 255;
-		}
+		int index = (*it) * 3;
+		image[index] = r;
+		image[index + 1] = g;
+		image[index + 2] = b;
 		it++;
 	}
 }
 
-void CellTrack::Cell::drawMarker(unsigned char* image, int w, int h, int d) const
+void CellTrack::Cell::drawMarker(unsigned char* image, int w, int h, int d, ComponentTree* tree)
 {
+	vector<int> &vertices = getCenterArea(w, h, d, tree);
+	assert(!vertices.empty());
+	if(vertices.empty()) return;
+	vector<int>::iterator it = vertices.begin();
+	int color = this->getColor();
+	unsigned char r = 255 - color % 256;
+	unsigned char g = 255 - (color / 256)%256;
+	unsigned char b = 255 - (color / 256 / 256)%256;
+	while(it != vertices.end())
+	{
+		int index = (*it) * 3;
+		image[index] = r;
+		image[index + 1] = g;
+		image[index + 2] = b;
+		it++;
+	}
+
 }
 
-vector<int> CellTrack::Cell::getCenterArea() const
+vector<int>& CellTrack::Cell::getCenterArea(int width, int height, int depth, ComponentTree* tree) 
 {
-	vector<int> area;
-	return area;
+	if(!m_center_area.empty()) return m_center_area;
+	float mean_x, mean_y, mean_z;
+	getCenter(mean_x, mean_y, mean_z, width, height, depth);
+	int cell_width = 0; 
+	int cell_height = 0;
+	int cell_depth = 0;
+
+	vector<int> vertices = getVertices(tree);
+	int min_x = INT_MAX;
+	int min_y = INT_MAX;
+	int min_z = INT_MAX;
+	int max_x = 0;
+	int max_y = 0;
+	int max_z = 0;
+
+	vector<int>::iterator it = vertices.begin();
+	while(it != vertices.end())
+	{
+		int w = (*it) % width;
+		int h = (*it) / width % height;
+		int d = (*it) / width / height % depth;
+		min_x = w < min_x ? w : min_x;
+		min_y = h < min_y ? h : min_y;
+		min_z = d < min_z ? d : min_z;
+		max_x = w > max_x ? w : max_x;
+		max_y = h > max_y ? h : max_y;
+		max_z = d > max_z ? d : max_z;
+		it++;
+	}
+	cell_width = max_x - min_x;
+	cell_height = max_y - min_y;
+	cell_depth = max_z - min_z;
+
+	float aa = (cell_width/2.0)*(cell_width/2.0)/4.0;
+	float bb = (cell_height/2.0)*(cell_height/2.0)/4.0;
+	float cc = (cell_depth/2.0)*(cell_depth/2.0)/4.0;
+	it = vertices.begin();
+	while(it != vertices.end())
+	{
+		int x = (*it) % width;
+		int y = (*it) / width % height;
+		int z = (*it) / width / height % depth;
+		if((x - mean_x)*(x - mean_x)/aa + (y - mean_y)*(y - mean_y)/bb + (z - mean_z)*(z - mean_z)/cc <= 1.0)
+		{
+			m_center_area.push_back((int)(*it));
+		}
+		it++;
+	}
+	return m_center_area;
 }
 
 void CellTrack::Cell::setCenterArea()
@@ -856,10 +909,14 @@ void CellTrack::Cell::setNextCell(CellTrack::Cell* next_cell)
 	m_next_cell = next_cell;
 }
 
-vector<int> CellTrack::Cell::getVertices(ComponentTree* tree) const
+vector<int>& CellTrack::Cell::getVertices(ComponentTree* tree)
 {
 	if(!m_vertices.empty()) return m_vertices;
-	if(tree != NULL) return this->getNode(tree)->getBetaPoints();
+	else if(tree != NULL)
+	{
+		m_vertices = this->getNode(tree)->getBetaPoints();
+		return m_vertices;
+	}
 	else
 	{
 		//cerr<<"Cell::getVertices: Unable to get vertices"<<endl;
@@ -883,13 +940,13 @@ int CellTrack::Cell::getVolume() const
 	return getSize();
 }
 
-int CellTrack::Cell::getCenter(int w, int h, int d) const
+void CellTrack::Cell::getCenter(float & mean_w, float & mean_h, float &mean_d, int w, int h, int d)
 {
-	vector<int> vertices = getVertices();
+	vector<int>& vertices = getVertices();
 	vector<int>::iterator it = vertices.begin();
-	int mean_w = vertices.size()/2;
-	int mean_h = vertices.size()/2;
-	int mean_d = vertices.size()/2;
+	mean_w = 0.0;
+	mean_h = 0.0;
+	mean_d = 0.0;
 	while(it != vertices.end())
 	{
 		mean_w += (*it) % w;
@@ -900,8 +957,6 @@ int CellTrack::Cell::getCenter(int w, int h, int d) const
 	mean_w = mean_w / vertices.size();
 	mean_h = mean_h / vertices.size();
 	mean_d = mean_d / vertices.size();
-	
-	return mean_d * w * h + mean_h * w + mean_w;
 }
 // assert the color is same to track color
 unsigned int CellTrack::Cell::getColor() const

@@ -10,7 +10,6 @@
 #include "../CT3D/cell_track_controller.h"
 #include "../myalgorithms.h"
 #include "../component_tree.h"
-#include "ui/adjustregiondialog.h"
 #include "dialogs/createdialog.h"
 #include "extends/cell_track_ex.h"
 using namespace std;
@@ -33,6 +32,7 @@ AT3DVIEW::AT3DVIEW(QWidget* parent) : QWidget(parent), CellTrackController()
 	
 	m_glWidget = new GLWidget();
 	m_cellWidget = new CellWidget();
+	connect(m_cellWidget, SIGNAL(cellChecked(CellTrack::Cell* )), this, SLOT(onCellMarked(CellTrack::Cell*)));
 	
 	QLayout * layout = new QVBoxLayout();
 	layout->addWidget(m_glWidget);
@@ -56,9 +56,13 @@ void AT3DVIEW::onOpen()
 		celltrack = createdlg->getCellTrack();
 		this->initTracksState(); // important
 		current_time = 0;
+		// 1. set m_glWidget
 		unsigned char* img = getTexData();
 		m_glWidget->loadTexture(img, this->getWidth(), this->getHeight(), this->getDepth(),3);
 		m_glWidget->updateGL();
+
+		// 2. set m_cellWidget
+		m_cellWidget->setCells(celltrack->getFrame(current_time)->getCells(), this->getMarkedCells());
 	}
 }
 
@@ -128,6 +132,7 @@ void AT3DVIEW::onFirst()
 	ui.glGroupBox->setTitle(tr("Time : %1").arg(current_time + 1));
 	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
 	m_glWidget->updateGL();
+	m_cellWidget->setCells(celltrack->getFrame(current_time)->getCells(), this->getMarkedCells());
 }
 
 void AT3DVIEW::onLast()
@@ -136,6 +141,7 @@ void AT3DVIEW::onLast()
 	ui.glGroupBox->setTitle(tr("Time : %1").arg(current_time + 1));
 	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
 	m_glWidget->updateGL();
+	m_cellWidget->setCells(celltrack->getFrame(current_time)->getCells(), this->getMarkedCells());
 }
 
 void AT3DVIEW::onPrevious()
@@ -144,6 +150,7 @@ void AT3DVIEW::onPrevious()
 	ui.glGroupBox->setTitle(tr("Time : %1").arg(current_time + 1));
 	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
 	m_glWidget->updateGL();
+	m_cellWidget->setCells(celltrack->getFrame(current_time)->getCells(), this->getMarkedCells());
 }
 
 void AT3DVIEW::onNext()
@@ -152,6 +159,7 @@ void AT3DVIEW::onNext()
 	ui.glGroupBox->setTitle(tr("Time : %1").arg(current_time + 1));
 	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
 	m_glWidget->updateGL();
+	m_cellWidget->setCells(celltrack->getFrame(current_time)->getCells(), this->getMarkedCells());
 }
 
 //Cell Widget
@@ -208,4 +216,15 @@ void AT3DVIEW::clear()
 	}
 }
 
+void AT3DVIEW::onCellMarked(CellTrack::Cell* cell)
+{
+	if(cell_centers.empty())
+	{
+		setCellCenters();
+	}
+	if(!tracks_state[cell->getTrack()]) this->markCell(cell);
+	else unMarkCell(cell);
 
+	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
+	m_glWidget->updateGL();
+}

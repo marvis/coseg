@@ -50,7 +50,7 @@ class CellTrackController
                 virtual void pushState(CellTrack*);
                 virtual CellTrack* popState();
                 virtual void undo();
-	private:
+	protected:
 		void setCellCenters();
 	protected:
 		vector<CellTrack*> history;

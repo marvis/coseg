@@ -4,8 +4,8 @@
 #include <QtGui>
 #include <vector>
 #include <stack>
-#include "glwidget.h"
-#include "cellwidget.h"
+#include "widgets/glwidget.h"
+#include "widgets/cellwidget.h"
 #include "../CT3D/cell_track_controller.h"
 #include "../component_tree.h"
 #include "ui_at3d_view.h"
@@ -88,6 +88,8 @@ private slots:
 	 * GLWidget
 	 ************************/
 	void onNearestCellChoosed(int);
+
+	void onCellMarked(CellTrack::Cell*);
 	 
 private:
 	void clear();
