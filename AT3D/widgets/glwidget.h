@@ -41,12 +41,11 @@
      void xRotationChanged(int angle);
      void yRotationChanged(int angle);
      void zRotationChanged(int angle);
-	 void cellChoosed(int);
+	 void mouseClicked(float, float, float); 
 public slots:
      void setXRotation(int angle);
      void setYRotation(int angle);
      void setZRotation(int angle);
-	 
  private:
      int xRot;
      int yRot;

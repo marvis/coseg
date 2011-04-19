@@ -169,16 +169,29 @@ void AT3DVIEW::onReverse()
 
 void AT3DVIEW::onUndo()
 {
+	if(history.empty()) return;
+	undo();
+	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
+	m_glWidget->updateGL();
+	m_cellWidget->setCells(celltrack->getFrame(current_time)->getCells(), this->getMarkedCells());
 }
 /************************************************
  * When checkbox are checked and clicked the choose button
  ************************************************/
 void AT3DVIEW::onChoose()
 {
+	choose();
+	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
+	m_glWidget->updateGL();
+	m_cellWidget->setCells(celltrack->getFrame(current_time)->getCells(), this->getMarkedCells());
 }
 
 void AT3DVIEW::onDelete()
 {
+	remove();
+	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
+	m_glWidget->updateGL();
+	m_cellWidget->setCells(celltrack->getFrame(current_time)->getCells(), this->getMarkedCells());
 }
 
 void AT3DVIEW::onNearestCellChoosed(int id)

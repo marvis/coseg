@@ -96,14 +96,12 @@ bool CellTrackController::loadCellTrack(string track_file, vector<string> tree_f
 void CellTrackController::setFirst()
 {
 	current_time = 0;
-	markChoosedCells();
 	cell_centers.clear();
 }
 
 void CellTrackController::setLast()
 {
 	current_time = celltrack->frameNum() - 1;
-	markChoosedCells();
 	cell_centers.clear();
 }
 
@@ -116,7 +114,6 @@ void CellTrackController::setNext()
 	{
 		current_time++;
 	}
-	markChoosedCells();
 	cell_centers.clear();
 }
 
@@ -129,7 +126,6 @@ void CellTrackController::setPrev()
 	{
 		current_time--;
 	}
-	markChoosedCells();
 	cell_centers.clear();
 }
 /************************************************************
@@ -182,7 +178,7 @@ int CellTrackController::getDepth()
 	return celltrack->getFrame(current_time)->depth();
 }
 
-CellTrack::Cell* CellTrackController::getClickedCell(int position)
+CellTrack::Cell* CellTrackController::getClickedCell(float x, float y, float z)
 {
 	if(cell_centers.empty())
 	{
@@ -191,22 +187,19 @@ CellTrack::Cell* CellTrackController::getClickedCell(int position)
 	int w = this->getWidth();
 	int h = this->getHeight();
 	int d = this->getDepth();
-	int mouse_w = position % w;
-	int mouse_h = (position /w ) % h;
-	int mouse_d = (position /w /h) % d;
 	int min_dist = INT_MAX;
 	CellTrack::Cell* obj_cell = NULL;
 	vector<CellTrack::Cell*> cells = celltrack->getFrame(current_time)->getCells();
 	vector<CellTrack::Cell*>::iterator it = cells.begin();
 	while(it != cells.end())
 	{
-		int center = cell_centers[*it];
-		int center_w = center % w;
-		int center_h = (center / w) % h;
-		int center_d = (center / w / h) % d;
-		int dist = (mouse_w - center_w)*(mouse_w - center_w) +
-		   	(mouse_h - center_h)*(mouse_h - center_h) + 
-			(mouse_d - center_d)*(mouse_d - center_d);
+		vector<float>& center = cell_centers[*it];
+		int center_x = center[0];
+		int center_y = center[1];
+		int center_z = center[2];
+		int dist = (x - center_x)*(x - center_x) +
+		   	(y - center_y)*(y - center_y) + 
+			(z - center_z)*(z - center_z);
 		if (dist < min_dist)
 		{
 			min_dist = dist;
@@ -245,20 +238,35 @@ vector<CellTrack::Track*> CellTrackController::getMarkedTracks()
 	}
 	return tracks;
 }
-void CellTrackController::markChoosedCells()
+
+void CellTrackController::markTracks(vector<CellTrack::Track*> tracks)
 {
+	vector<CellTrack::Track*>::iterator it = tracks.begin();
+	while(it != tracks.end())
+	{
+		tracks_state[*it] = true;
+		it++;
+	}
+}
+
+void CellTrackController::unMarkTracks(vector<CellTrack::Track*> tracks)
+{
+	vector<CellTrack::Track*>::iterator it = tracks.begin();
+	while(it != tracks.end())
+	{
+		tracks_state[*it] = false;
+		it++;
+	}
 }
 
 void CellTrackController::markCell(CellTrack::Cell* cell)
 {
 	tracks_state[cell->getTrack()] = true;
-	this->markChoosedCells();
 }
 
 void CellTrackController::unMarkCell(CellTrack::Cell* cell)
 {
 	tracks_state[cell->getTrack()] = false;
-	this->markChoosedCells();
 }
 
 void CellTrackController::markCellsReversely()
@@ -333,8 +341,18 @@ void CellTrackController::choose(bool keep_unvisited_tracks)
 	{
 		celltrack = celltrack->choose(tracks);
 	}
-	this->initTracksState(tracks);
-	this->markChoosedCells();
+	//this->initTracksState(/*tracks*/);
+	this->markTracks(tracks);
+	pushState(old_celltrack);
+	cell_centers.clear();
+}
+
+void CellTrackController::remove()
+{
+	CellTrack* old_celltrack = celltrack;
+	vector<CellTrack::Track*> tracks = this->getMarkedTracks();
+	celltrack = celltrack->remove(tracks);
+	this->unMarkTracks(tracks);
 	pushState(old_celltrack);
 	cell_centers.clear();
 }
@@ -362,12 +380,10 @@ void CellTrackController::undo()
 {
 	if(!history.empty())
 	{
-		vector<CellTrack::Track*> tracks = this->getMarkedTracks();
+		//vector<CellTrack::Track*> tracks = this->getMarkedTracks();
 		celltrack->releaseFrames();
-		delete celltrack;
+		//delete celltrack;
 		celltrack = this->popState();
-		this->initTracksState(tracks);
-		this->markChoosedCells();
 	}
 }
 
@@ -383,7 +399,11 @@ void CellTrackController::setCellCenters()
 	{
 		float mean_x, mean_y, mean_z;
 		 (*it)->getCenter(mean_x, mean_y, mean_z, w, h, d);
-		cell_centers[*it] = (int)((int)(mean_z + 0.5) * w * h + (int)(mean_y + 0.5) * w + (int)(mean_x + 0.5));
+		 vector<float> center;
+		 center.push_back(mean_x);
+		 center.push_back(mean_y);
+		 center.push_back(mean_z);
+		 cell_centers[*it] = center;
 		it++;
 	}
 }

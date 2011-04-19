@@ -35,18 +35,21 @@ class CellTrackController
                 virtual int getHeight();
                 virtual int getDepth();
 		
-                virtual CellTrack::Cell* getClickedCell(int position);
+                virtual CellTrack::Cell* getClickedCell(float x, float y, float z);
                 virtual vector<CellTrack::Cell*> getMarkedCells(); // get marked cells in current frame
                 virtual vector<CellTrack::Track*> getMarkedTracks(); // get marked cells in all frames
 
-		/*virtual*/ void markChoosedCells(/*CellTrack::Frame * frame = NULL*/); // used when change frames
+		///*virtual*/ void markChoosedCells(/*CellTrack::Frame * frame = NULL*/); // used when change frames
+				virtual void markTracks(vector<CellTrack::Track*> tracks);
+				virtual void unMarkTracks(vector<CellTrack::Track*> tracks);
                 virtual void markCell(CellTrack::Cell*);
                 virtual void unMarkCell(CellTrack::Cell*);
                 virtual void markCellsReversely(); // reversly mark cells in current frame
 
                 virtual void initTracksState(vector<CellTrack::Track*> marked_tracks = vector<CellTrack::Track*>());
 		
-		/*virtual*/ void choose(bool keep_unvisited_tracks = true);     // once choosed, no new cells will produce in next frames
+		        virtual void choose(bool keep_unvisited_tracks = true);     // once choosed, no new cells will produce in next frames
+				virtual void remove();
                 virtual void pushState(CellTrack*);
                 virtual CellTrack* popState();
                 virtual void undo();
@@ -56,7 +59,7 @@ class CellTrackController
 		vector<CellTrack*> history;
 		CellTrack* celltrack;
 		map<CellTrack::Track*, bool> tracks_state; // affect by create choose undo operation
-		map<CellTrack::Cell*, int> cell_centers;  // will be cleared when change frames,  choose and undo, will be create when clicked first cell
+		map<CellTrack::Cell*, vector<float> > cell_centers;  // will be cleared when change frames,  choose and undo, will be create when clicked first cell
 		int current_time;  // start from 0
 };
 

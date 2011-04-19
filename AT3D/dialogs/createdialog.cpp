@@ -287,7 +287,7 @@ void CreateDialog::on_startTrackingButton_clicked()
             else ui->exportButton->setEnabled(true);
         }
 		ui->progressBar->setValue(2*m_filelist.size() - 1);
-		QMessageBox::information(this,tr("Create Finished"),tr("Create Successfully!"));
+		//QMessageBox::information(this,tr("Create Finished"),tr("Create Successfully!"));
         return QDialog::accept();
     }
     else

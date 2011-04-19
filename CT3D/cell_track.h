@@ -43,7 +43,7 @@ class CellTrack
 			Cell();
 			Track* getTrack() const;
 			void setTrack(Track*);
-			//double meanHeight() const;
+			//float meanHeight() const;
 			void draw(unsigned char* image,/* int w, int h, int d, int c=3,*/ ComponentTree* tree = NULL);
 			void drawMarker(unsigned char* image, int w, int h, int d, ComponentTree* tree);
 

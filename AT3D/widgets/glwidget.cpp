@@ -12,6 +12,7 @@
 
 #include <math.h>
 #include <map>
+#include <iostream>
 #include "glwidget.h"
 using namespace std;
 
@@ -75,27 +76,16 @@ void GLWidget::resizeGL(int width, int height)
 
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-	/*
 	if(pressPos == event->pos())
 	{
-		map<double,int> dists;
-		
-		double fx;
-		double fy;
-		double fz;
+		double objX, objY, objZ;
 		double shiftx = - 0.5* m_width * ratio;
 		double shifty = - 0.5* m_height * ratio;
 		double shiftz = - 0.5* m_depth * ratio;
-		
-		double minX;
-		double minY;
-		double minZ;
-		double projectX;  // horizental distance from center of the viewport, left(-1) to right (1)
-		double projectY;  // vertical   distance from center of the viewport, bottow(-1) to up (1)
-		double projectZ;  // back to front, -1 -> 1
-		double maxX;
-		double maxY;
-		double maxZ;
+			
+		double winX =(double)( event->x());  // horizental distance from center of the viewport, left(-1) to right (1)
+		double winY = (double)(event->y());  // vertical   distance from center of the viewport, bottow(-1) to up (1)
+		double winZ = 0.0;  // back to front, -1 -> 1
 		
 		GLdouble modeview[16];
 		GLdouble projection[16];
@@ -105,50 +95,13 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 		glGetDoublev(GL_PROJECTION_MATRIX,projection);
 		glGetIntegerv(GL_VIEWPORT,viewport);
 		
-		for(int i = 0; i < (int) m_frame.size(); i++)
-		{
-			AT3D::Cell* cell = m_frame[i];
-			fx = cell->centerX * ratio + shiftx;
-			fy = cell->centerY * ratio + shifty;
-			fz = cell->centerZ * ratio + shiftz;
-			
-			gluProject(fx, fy, fz, modeview,projection,viewport,
-					   &projectX, &projectY, &projectZ);
-			
-			projectY = this->height() - projectY;
-			
-			fx = cell->borderX*ratio + shiftx;
-			fy = cell->borderY*ratio + shifty;
-			fz = cell->borderZ*ratio + shiftz;
-			gluProject(fx, fy, fz, modeview,projection,viewport,
-					   &minX, &minY, &minZ);
-			
-			minY = this->height() - minY;
-			
-			fx = (cell->borderX+cell->lengthX)*ratio + shiftx;
-			fy = (cell->borderY+cell->lengthY)*ratio + shifty;
-			fz = (cell->borderZ+cell->lengthZ)*ratio + shiftz;
-			gluProject(fx, fy, fz, modeview,projection,viewport,
-					   &maxX, &maxY, &maxZ);
-			maxY = this->height() - maxY;
-			
-			if((event->x() - minX) * (maxX - event->x()) > 0.000001 &&
-			   (event->y() - minY) * (maxY - event->y()) > 0.000001 )
-			{
-				//cout<<"find 1"<<endl;
-				double dx = projectX  - event->x();
-				double dy = projectY  - event->y();
-				//double dz = projectZ  - 0;
-				//double dz = cell->centerZ;
-				double distance = dx*dx + dy*dy;// + dz*dz;
-				// or distance = sqrt(dx*dx + dy*dy + dz*dz);
-				dists[distance]  = i;
-			}
-		}
-	
-		if(! dists.empty())emit cellChoosed(dists.begin()->second);
+		gluUnProject(winX, winY, winZ, modeview, projection, viewport, &objX, &objY, &objZ);	
+		objX = (objX - shiftx)/ratio;
+		objY = (objY - shifty)/ratio;
+		objZ = (objZ - shiftz)/ratio;
+		emit mouseClicked(objX, objY, objZ);
+		cout<<"("<<objX<<","<<objY<<","<<objZ<<") is clicked"<<endl;
 	}
-*/
 }
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
