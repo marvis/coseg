@@ -68,6 +68,21 @@ void CellWidget::setLayoutItems(int num)
 	}
 	m_numLayoutItems = num;
 }
+void CellWidget::setCellChecked(CellTrack::Cell* cell, bool check_state)
+{
+	vector<CellTrack::Cell*>::iterator it = m_cells.begin();
+	int i = 0;
+	while(it != m_cells.end())
+	{
+		if(cell == (CellTrack::Cell*)(*it))
+		{
+			break;
+		}
+		it++;
+		i++;
+	}
+	m_checkers[i]->setChecked(check_state);
+}
 
 void CellWidget::clearCells()
 {

@@ -74,33 +74,34 @@ void GLWidget::resizeGL(int width, int height)
 	glMatrixMode(GL_MODELVIEW);
 }
 
+void GLWidget::getProjection(double & winX, double & winY, double &winZ, double objX, double objY, double objZ)
+{
+	double shiftx = - 0.5* m_width * ratio;
+	double shifty = - 0.5* m_height * ratio;
+	double shiftz = - 0.5* m_depth * ratio;
+
+	objX = objX * ratio + shiftx;
+	objY = objY * ratio + shifty;
+	objZ = objZ * ratio + shiftz;
+
+	GLdouble modeview[16];
+	GLdouble projection[16];
+	GLint viewport[4];
+
+	glGetDoublev(GL_MODELVIEW_MATRIX,modeview);
+	glGetDoublev(GL_PROJECTION_MATRIX,projection);
+	glGetIntegerv(GL_VIEWPORT,viewport);
+
+	gluProject(objX, objY, objZ, modeview, projection, viewport, &winX, &winY, &winZ);
+}
+
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
 	if(pressPos == event->pos())
 	{
-		double objX, objY, objZ;
-		double shiftx = - 0.5* m_width * ratio;
-		double shifty = - 0.5* m_height * ratio;
-		double shiftz = - 0.5* m_depth * ratio;
-			
-		double winX =(double)( event->x());  // horizental distance from center of the viewport, left(-1) to right (1)
-		double winY = (double)(event->y());  // vertical   distance from center of the viewport, bottow(-1) to up (1)
-		double winZ = 0.0;  // back to front, -1 -> 1
-		
-		GLdouble modeview[16];
-		GLdouble projection[16];
-		GLint viewport[4];
-		
-		glGetDoublev(GL_MODELVIEW_MATRIX,modeview);
-		glGetDoublev(GL_PROJECTION_MATRIX,projection);
-		glGetIntegerv(GL_VIEWPORT,viewport);
-		
-		gluUnProject(winX, winY, winZ, modeview, projection, viewport, &objX, &objY, &objZ);	
-		objX = (objX - shiftx)/ratio;
-		objY = (objY - shifty)/ratio;
-		objZ = (objZ - shiftz)/ratio;
-		emit mouseClicked(objX, objY, objZ);
-		cout<<"("<<objX<<","<<objY<<","<<objZ<<") is clicked"<<endl;
+		float winX = (float)( event->x());  // horizental distance from center of the viewport, left(-1) to right (1)
+		float winY = (float)(this->height() - event->y());  // vertical   distance from center of the viewport, bottow(-1) to up (1)
+		emit mouseClicked(winX, winY);
 	}
 }
 
@@ -146,14 +147,14 @@ void GLWidget::paintGL()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		return;
 	}
-	
+
 	/***********************************************
 	 * Step 1: Initial Definition of Local Variable
 	 ***********************************************/
 	float fx=0,fy=0,fz=0; //Point(fx,fy,fz)
 	//Color(r,g,b)
 	int red=0,green =0, blue =0;
-	
+
 	/******************************************************
 	 * Step 2: Set openGL Environment and  Do Scale,Translate as well as Rotation Operation
 	 *
@@ -173,24 +174,24 @@ void GLWidget::paintGL()
 	 *    x : increase from left to right
 	 *    y : increase from bottom to top
 	 *    z : increase from outside to inside
-	    -----------------
-	  /|                /|
+	 -----------------
+	 /|                /|
 	 / |               / |
 	 -----------------   |
-	|  |      y       |  |
-	|  |      ^       |  |
-	|  |      |       |  |
-	|  |      o--->x  |  |
-	|  |     /        |  |
-	|  |              |  |
-	|   --------------|--      
-	| /               | /
-	|/                |/
+	 |  |      y       |  |
+	 |  |      ^       |  |
+	 |  |      |       |  |
+	 |  |      o--->x  |  |
+	 |  |     /        |  |
+	 |  |              |  |
+	 |   --------------|--      
+	 | /               | /
+	 |/                |/
 	 ----------------- 
-	* Considerless about the move operation, we will draw our object 
-	* in the box(-0.5*lenX,-0.5*lenY,-0.5*lenZ) -> (0.5*lenX,0.5*lenY,0.5*lenZ)
-	* To rotation, we should first move the origin to (0, 0, 0). 	
-	*/
+	 * Considerless about the move operation, we will draw our object 
+	 * in the box(-0.5*lenX,-0.5*lenY,-0.5*lenZ) -> (0.5*lenX,0.5*lenY,0.5*lenZ)
+	 * To rotation, we should first move the origin to (0, 0, 0). 	
+	 */
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 	glScalef(scale, scale, scale);
@@ -203,33 +204,33 @@ void GLWidget::paintGL()
 	glRotated(yRot / 16.0, 0.0, 1.0, 0.0);
 	glRotated(zRot / 16.0, 0.0, 0.0, 1.0);
 
-	
+
 	/********************************************
 	 * Step 3: Draw Six surfaces
 	 ********************************************/
 	//Move the origin to top left
 	glTranslatef(-0.5*lenX,     0.5*lenY,        0.5*lenZ);
 	/*           |          |           
-	 move     to left    to top 
-	 */
+				 move     to left    to top 
+				 */
 	glColor3f(0.0,0.0,0.0);
 	/*
-	     ------------------
-	  Z/|                 /|
-	  / |                / |
-	  -------X-->-------   |
-	 |******************|  |
-	 |******************|  |
-	 |******************|  |
-	 Y******************|  |
-	 |******************|  |
-	 ^******************|  |
-	 |******************|--      
-	 |******************| /
-	 |******************|/
-	  ---------<-------- 
-	 */
-	
+	   ------------------
+	   Z/|                 /|
+	   / |                / |
+	   -------X-->-------   |
+	   |******************|  |
+	   |******************|  |
+	   |******************|  |
+	   Y******************|  |
+	   |******************|  |
+	   ^******************|  |
+	   |******************|--      
+	   |******************| /
+	   |******************|/
+	   ---------<-------- 
+	   */
+
 	/* Plane 1 */
 	// Draw front x-y plane
 	glBegin(GL_QUADS);
@@ -247,7 +248,7 @@ void GLWidget::paintGL()
 	glVertex3f(1.0*lenX,0.0,-1.0*lenZ);
 	glVertex3f(0.0,0.0,-1.0*lenZ);
 	glEnd();
-	
+
 	/* Plane 3 */
 	// Draw left y-z plane
 	glBegin(GL_QUADS);
@@ -256,7 +257,7 @@ void GLWidget::paintGL()
 	glVertex3f(0.0,-1.0*lenY,-1.0*lenZ);
 	glVertex3f(0.0,-1.0*lenY,0.0);
 	glEnd();
-	
+
 	/* Plane 4 */
 	// Draw right y-z plane
 	glBegin(GL_QUADS);
@@ -265,7 +266,7 @@ void GLWidget::paintGL()
 	glVertex3f(1.0*lenX,-1.0*lenY,-1.0*lenZ);
 	glVertex3f(1.0*lenX,0.0,-1.0*lenZ);
 	glEnd();	
-	
+
 	/* Plane 5 */
 	// Draw bottom x-z plane
 	glBegin(GL_QUADS);
@@ -274,7 +275,7 @@ void GLWidget::paintGL()
 	glVertex3f(1.0*lenX,-1.0*lenY,-1.0*lenZ);
 	glVertex3f(1.0*lenX,-1.0*lenY,0.0);
 	glEnd();
-	
+
 	/* Plane 6 */
 	// Draw back x-y plane
 	glBegin(GL_QUADS);
@@ -283,66 +284,66 @@ void GLWidget::paintGL()
 	glVertex3f(1.0*lenX,-1.0*lenY,-1.0*lenZ);
 	glVertex3f(0.0,-1.0*lenY,-1.0*lenZ);
 	glEnd();
-	
+
 	/******************************************
 	 * Step 4: Draw twelve axises
 	 ******************************************/
 	glLineWidth(3.0);
 	/*
-	 (0,0,-1)-------------(1,0,-1)
-	 /|                  / |
-	 / |                /   |
-	 (0,0,0)------------(1,0,0)  |
-	 |  |               |    |
-	 |  |               |    |
-	 |  |               |    |
-	 |  |               |    |
-	 |  |               |    |
-	 |  |               |    |
-	 |(0,-1,-1)---------|-(1,-1,-1)
-	 | /                |   /
-	 |/                 | /
-	 (0,-1,0)-----------(1,-1,0)
-	 */
-	
+	   (0,0,-1)-------------(1,0,-1)
+	   /|                  / |
+	   / |                /   |
+	   (0,0,0)------------(1,0,0)  |
+	   |  |               |    |
+	   |  |               |    |
+	   |  |               |    |
+	   |  |               |    |
+	   |  |               |    |
+	   |  |               |    |
+	   |(0,-1,-1)---------|-(1,-1,-1)
+	   | /                |   /
+	   |/                 | /
+	   (0,-1,0)-----------(1,-1,0)
+	   */
+
 	glBegin(GL_LINES);
 	glColor3f(1.0,0.0,0.0);
 	glVertex3f(0.0,0.0,-1.0*lenZ);
 	glVertex3f(1.1*lenX,0.0,-1.0*lenZ);
 	glEnd();
-	
+
 	//Draw 
 	glBegin(GL_LINES);
 	glColor3f(0.0,1.0,0.0);
 	glVertex3f(0.0,0.0,-1.0*lenZ);
 	glVertex3f(0.0,-1.1*lenY,-1.0*lenZ);
 	glEnd();
-	
+
 	glBegin(GL_LINES);
 	glColor3f(0.0,0.0,1.0);
 	glVertex3f(0.0,0.0,0.1*lenZ);
 	glVertex3f(0.0,0.0,-1.0*lenZ);
 	glEnd();
-	
+
 	glLineWidth(2.0);
 	glBegin(GL_LINES);
 	glColor3f(0.5,0.5,0.5);
 	glVertex3f(0.0,0.0,0);
 	glVertex3f(1.0*lenX,0.0,0);
 	glEnd();
-	
+
 	glBegin(GL_LINES);
 	glColor3f(0.5,0.5,0.5);
 	glVertex3f(0.0,0.0,0);
 	glVertex3f(0.0,-1.0*lenY,0);
 	glEnd();
-	
+
 	glBegin(GL_LINES);
 	glColor3f(0.5,0.5,0.5);
 	glVertex3f(0.0,0.0,0);
 	glVertex3f(0.0,0.0,-1.0*lenZ);
 	glEnd();
-	
+
 	glBegin(GL_LINES);
 	glColor3f(0.5,0.5,0.5);
 	glVertex3f(1.0*lenX,0.0,0.0);
@@ -353,63 +354,63 @@ void GLWidget::paintGL()
 	glVertex3f(1.0*lenX,0.0,0.0);
 	glVertex3f(1.0*lenX,-1.0*lenY,0.0);
 	glEnd();
-	
+
 	glBegin(GL_LINES);
 	glColor3f(0.5,0.5,0.5);
 	glVertex3f(1.0*lenX,0.0,0.0);
 	glVertex3f(1.0*lenX,-1.0*lenY,0.0);
 	glEnd();
-	
+
 	glBegin(GL_LINES);
 	glColor3f(0.5,0.5,0.5);
 	glVertex3f(1.0*lenX,-1.0*lenY,0.0);
 	glVertex3f(0.0,-1.0*lenY,0.0);
 	glEnd();
-	
+
 	glBegin(GL_LINES);
 	glColor3f(0.5,0.5,0.5);
 	glVertex3f(1.0*lenX,-1.0*lenY,0.0);
 	glVertex3f(1.0*lenX,-1.0*lenY,-1.0*lenZ);
 	glEnd();
-	
+
 	glBegin(GL_LINES);
 	glColor3f(0.5,0.5,0.5);
 	glVertex3f(0.0,-1.0*lenY,0.0);
 	glVertex3f(0.0,-1.0*lenY,-1.0*lenZ);
 	glEnd();
-	
+
 	glBegin(GL_LINES);
 	glColor3f(0.5,0.5,0.5);
 	glVertex3f(0.0,0.0,-1.0*lenZ);
 	glVertex3f(1.0*lenX,0.0,-1.0*lenZ);
 	glEnd();
-	
+
 	glBegin(GL_LINES);
 	glColor3f(0.5,0.5,0.5);
 	glVertex3f(0.0,0.0,-1.0*lenZ);
 	glVertex3f(0.0,-1.0*lenY,-1.0*lenZ);
 	glEnd();
-	
+
 	glBegin(GL_LINES);
 	glColor3f(0.5,0.5,0.5);
 	glVertex3f(1.0*lenX,-1.0*lenY,-1.0*lenZ);
 	glVertex3f(0.0,-1.0*lenY,-1.0*lenZ);
 	glEnd();
-	
+
 	glBegin(GL_LINES);
 	glColor3f(0.5,0.5,0.5);
 	glVertex3f(1.0*lenX,-1.0*lenY,-1.0*lenZ);
 	glVertex3f(1.0*lenX,0.0,-1.0*lenZ);
 	glEnd();
-	
+
 	/*****************************************************
 	 * Step 5 : Draw the cells in 3D
 	 *****************************************************/
 	//glTranslatef(0.0,-1.0, 0.0);
 	glTranslatef(0.5*lenX,     -0.5*lenY,        -0.5*lenZ);
 	/*           |          |           |
-	 move     to left    to bottom    to outside
-	 */
+				 move     to left    to bottom    to outside
+				 */
 	glBegin(GL_POINTS);
 	// 1. draw cell body
 	float shiftx = - 0.5* m_width * ratio;

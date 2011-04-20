@@ -27,6 +27,7 @@ public:
 	void setCells(vector<CellTrack::Cell*> visable_cells, vector<CellTrack::Cell*> marked_cells);
 	void clearCells();
 	void setLayoutItems(int num);
+	void setCellChecked(CellTrack::Cell* cell, bool check_state);
 public slots:
 	void onCellChecked(int state);
 signals:

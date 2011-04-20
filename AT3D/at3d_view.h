@@ -21,6 +21,7 @@ class AT3DVIEW : public QWidget, public CellTrackController
 	
 public:
 	AT3DVIEW(QWidget *parent = 0);
+	CellTrack::Cell* getClickedCell(float x, float y, float z);
 private slots:
 	/************************
 	 * File Group
@@ -89,6 +90,7 @@ private slots:
 	 ************************/
 	void onNearestCellChoosed(int);
 
+	void onCellMarked(float x, float y);
 	void onCellMarked(CellTrack::Cell*);
 	 
 private:

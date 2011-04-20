@@ -31,6 +31,7 @@ AT3DVIEW::AT3DVIEW(QWidget* parent) : QWidget(parent), CellTrackController()
 	//step 2 : initialization
 	
 	m_glWidget = new GLWidget();
+	connect(m_glWidget, SIGNAL(mouseClicked(float,float)), this, SLOT(onCellMarked(float, float)));
 	m_cellWidget = new CellWidget();
 	connect(m_cellWidget, SIGNAL(cellChecked(CellTrack::Cell* )), this, SLOT(onCellMarked(CellTrack::Cell*)));
 	
@@ -39,6 +40,41 @@ AT3DVIEW::AT3DVIEW(QWidget* parent) : QWidget(parent), CellTrackController()
 	ui.glGroupBox->setLayout(layout);
 
 	ui.scrollArea->setWidget(m_cellWidget);	
+}
+
+CellTrack::Cell* AT3DVIEW::getClickedCell(float posX, float posY, float posZ)
+{
+	if(cell_centers.empty())
+	{
+		setCellCenters();
+	}
+	int w = this->getWidth();
+	int h = this->getHeight();
+	int d = this->getDepth();
+	float min_dist = (float)INT_MAX;
+	CellTrack::Cell* obj_cell = NULL;
+	vector<CellTrack::Cell*> cells = celltrack->getFrame(current_time)->getCells();
+	vector<CellTrack::Cell*>::iterator it = cells.begin();
+	while(it != cells.end())
+	{
+		vector<float>& center = cell_centers[*it];
+		double center_x = center[0];
+		double center_y = center[1];
+		double center_z = center[2];
+		double winX, winY, winZ;
+		this->m_glWidget->getProjection(winX, winY, winZ, center_x, center_y, center_z);
+		winZ = 0.0;
+		float dist = (posX - winX)*(posX - winX) + 
+			(posY - winY)*(posY - winY) + 
+			(posZ - winZ)*(posZ - winZ);
+		if(dist < min_dist)
+		{
+			min_dist = dist;
+			obj_cell = *it;
+		}
+		it++;
+	}
+	return obj_cell;
 }
 
 /***************************************************
@@ -229,15 +265,39 @@ void AT3DVIEW::clear()
 	}
 }
 
+void AT3DVIEW::onCellMarked(float x, float y)
+{
+	CellTrack::Cell* cell = this->getClickedCell(x,y,0.0);
+	if(!tracks_state[cell->getTrack()])
+	{
+		m_cellWidget->setCellChecked(cell, true);
+	}
+	else 
+	{
+		m_cellWidget->setCellChecked(cell, false);
+	}
+	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
+	m_glWidget->updateGL();
+
+}
+
+// signal from cellwidget
 void AT3DVIEW::onCellMarked(CellTrack::Cell* cell)
 {
-	if(cell_centers.empty())
+//	if(cell_centers.empty())
+//	{
+//		setCellCenters();
+//	}
+	if(!tracks_state[cell->getTrack()])
 	{
-		setCellCenters();
+		this->markCell(cell);
 	}
-	if(!tracks_state[cell->getTrack()]) this->markCell(cell);
-	else unMarkCell(cell);
+	else 
+	{
+		unMarkCell(cell);
+	}
 
 	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
 	m_glWidget->updateGL();
+	//m_cellWidget->setCells(celltrack->getFrame(current_time)->getCells(), this->getMarkedCells());
 }

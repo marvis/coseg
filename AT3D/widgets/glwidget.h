@@ -18,6 +18,7 @@
 	 QSize minimumSizeHint() const;
 	 //Set the recommended Size of GLWidget
      QSize sizeHint() const; 
+	 void getProjection(double & winX, double & winY, double &winZ, double objX, double objY, double objZ);
  protected:
      void initializeGL();
      void resizeGL(int width, int height);
@@ -41,7 +42,7 @@
      void xRotationChanged(int angle);
      void yRotationChanged(int angle);
      void zRotationChanged(int angle);
-	 void mouseClicked(float, float, float); 
+	 void mouseClicked(float posX, float posY); 
 public slots:
      void setXRotation(int angle);
      void setYRotation(int angle);

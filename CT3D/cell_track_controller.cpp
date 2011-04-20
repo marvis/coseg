@@ -194,10 +194,10 @@ CellTrack::Cell* CellTrackController::getClickedCell(float x, float y, float z)
 	while(it != cells.end())
 	{
 		vector<float>& center = cell_centers[*it];
-		int center_x = center[0];
-		int center_y = center[1];
-		int center_z = center[2];
-		int dist = (x - center_x)*(x - center_x) +
+		float center_x = center[0];
+		float center_y = center[1];
+		float center_z = center[2];
+		float dist = (x - center_x)*(x - center_x) +
 		   	(y - center_y)*(y - center_y) + 
 			(z - center_z)*(z - center_z);
 		if (dist < min_dist)
