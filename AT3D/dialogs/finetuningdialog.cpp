@@ -21,6 +21,7 @@ FineTuningDialog::FineTuningDialog(QWidget *parent) :
 	m_mainLabel = -1;
 	initCellWidget(1);
 	initGLWidget();
+	connect(m_glWidget, SIGNAL(mouseClicked(float, float)), this, SLOT(onClickedNode(float,float)));
 }
 
 FineTuningDialog::~FineTuningDialog()
@@ -38,9 +39,11 @@ void FineTuningDialog::setParameters(ComponentTree* tree, int label)
 	if(m_mainLabel == -1) m_mainLabel = tree->root()->getLabel();
 	m_labels.clear();
 	m_labels.push_back(m_mainLabel);
-	cout<<"m_mainLabel = "<< m_mainLabel<<" size = "<<tree->getNode(label)->getBetaSize()<<endl;
+	int level = tree->getNode(label)->getLowestLevel();
+	ui->thresholdScrollBar->setValue(level);
 	updateCellWidget();
 	updateGLWidget();
+	updateInfoWidget();
 }
 
 void FineTuningDialog::changeEvent(QEvent *e)
@@ -154,7 +157,25 @@ void FineTuningDialog::updateGLWidget()
 	m_glWidget->loadTexture(this->getTexture(), w, h, d, 3);
 	m_glWidget->updateGL();
 }
+void FineTuningDialog::updateInfoWidget()
+{
+	if(m_tree == NULL) return;
+	int w = m_tree->width();
+	int h = m_tree->height();
+	int d = m_tree->depth();
+	
+	ui->minEditor->setText(tr("%1").arg(m_tree->width()));
+	ui->maxEditor->setText(tr("%1").arg(m_tree->height()));
+	ui->singleEditor->setText(tr("%1").arg(m_tree->depth()));
 
+	ui->widthLabel2->setText(tr("%1").arg(w));
+	ui->heightLabel2->setText(tr("%1").arg(h));
+	ui->depthLabel2->setText(tr("%1").arg(d));
+	
+	ui->mainLabelLabel2->setText(tr("%1").arg(m_mainLabel));
+	ui->levelLabel2->setText(tr("%1").arg(m_tree->getNode(m_mainLabel)->getLowestLevel()));
+
+}
 void FineTuningDialog::onCheckCell()
 {
 	if(m_tree == NULL) return;
@@ -187,8 +208,44 @@ void FineTuningDialog::onChoose()
 		m_labels = labels;
 		updateCellWidget();
 		updateGLWidget();
+		updateInfoWidget();
 		ui->thresholdScrollBar->setValue(m_tree->getNode(m_mainLabel)->getLowestLevel());
 	}
+}
+
+void FineTuningDialog::onClickedNode(float posX, float posY)
+{
+	if(m_tree == NULL) return;
+	int width = m_tree->width();
+	int height = m_tree->height();
+	int depth = m_tree->depth();
+	int min_label = -1;
+	float min_dist = -1.0;
+	vector<int>::iterator it = m_labels.begin();
+	while(it != m_labels.end())
+	{
+		int label = *it;
+		float cx, cy, cz;
+		double wx, wy, wz;
+		m_tree->getNode(label)->getCenter(cx,cy,cx,width, height, depth);
+		m_glWidget->getProjection(wx,wy,wz,(double)cx,(double)cy,(double)cz);
+		float dist = (wx - posX)*(wx - posX) + (wy - posY) * (wy - posY);
+		if(min_label == -1) min_label = label;
+		if(min_dist < 0.0) min_dist = dist;
+		if(dist < min_dist)
+		{
+			min_label = label;
+			min_dist = dist;
+		}
+		it++;
+	}
+	int i = 0;
+	for(; i < m_labels.size();i++)
+	{
+		if(min_label == m_labels[i]) break;
+	}
+	if(m_checkers[i]->isChecked())m_checkers[i]->setChecked(false);
+	else m_checkers[i]->setChecked(true);
 }
 
 void FineTuningDialog::onReset()
@@ -210,19 +267,17 @@ void FineTuningDialog::onThreshold(int thresh_value)
 	int level = curNode->getLowestLevel();
 	if(thresh_value <= level)
 	{
-		cout<<"thresh_value = "<<thresh_value<<" level = "<<level<<endl;
 		m_labels.clear();
 		ComponentTree::Node* p = curNode;
 		while(p->getParent()->getLowestLevel() > thresh_value)
 		{
-			cout<<p->getLowestLevel()<<"\t"<<p->getParent()->getLowestLevel()<<"\t";
 			p = p->getParent();
 		}
+		// to avoid dead loop
 		if(p->getParent()->getLowestLevel() == thresh_value)
 		{
 			p = p->getParent();
 		}
-		cout<<endl;
 		m_labels.push_back(p->getLabel());
 	}
 	else if(thresh_value > level)
@@ -242,6 +297,7 @@ void FineTuningDialog::onThreshold(int thresh_value)
 	}
 	updateCellWidget();
 	updateGLWidget();
+	updateInfoWidget();
 }
 
 
@@ -308,6 +364,7 @@ void FineTuningDialog::onLoadTree()
 	// 4. update cell widget and GLWidget
 	updateCellWidget();
 	updateGLWidget();
+	updateInfoWidget();
 }
 
 // becareful set m_colors
@@ -332,6 +389,7 @@ void FineTuningDialog::onCreateTree()
 	// 4. update cell widget and gl widget
 	updateCellWidget();
 	updateGLWidget();
+	updateInfoWidget();
 }
 
 vector<int> getRandColors(int colorNum)

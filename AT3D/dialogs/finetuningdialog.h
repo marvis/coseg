@@ -28,6 +28,7 @@ public slots:
 	void onChoose();
 	void onReset();
 	void onCheckCell();
+	void onClickedNode(float posX, float posY);
 protected:
     void changeEvent(QEvent *e);
 		
@@ -37,7 +38,9 @@ private:
 	void updateCellWidget(); // first
 	void initGLWidget();     // second getTexture will need update CellWidget
 	void updateGLWidget();
+	void updateInfoWidget();
 	unsigned char * getTexture();
+
 private:
     Ui::FineTuningDialog *ui;
 	ComponentTree* m_tree;  ///< the component tree that we want to view

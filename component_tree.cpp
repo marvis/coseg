@@ -269,6 +269,30 @@ vector<int> ComponentTree::Node::getBetaPoints()
 	return points;
 }
 
+void ComponentTree::Node::getCenter(float & cx, float & cy, float & cz, int width, int height, int depth)
+{
+	vector<int> vertices = getBetaPoints();
+	cx = 0.0;
+	cy = 0.0;
+	cz = 0.0;
+
+	vector<int>::iterator it = vertices.begin();
+	while(it != vertices.end())
+	{
+		int index = *it;
+		int w = index % width;
+		int h = index / width % height;
+		int d = index / width / height % depth;
+		cx += w;
+		cy += h;
+		cz += d;
+		it++;
+	}
+	cx = cx / vertices.size();
+	cy = cy / vertices.size();
+	cz = cz / vertices.size();
+}
+
 vector<int> ComponentTree::Node::getCenterPoints(int width, int height, int depth)
 {
 	vector<int> vertices = getBetaPoints();
