@@ -109,7 +109,8 @@ void CellWidget::setCells(vector<CellTrack::Cell*> visable_cells, vector<CellTra
 		CellTrack::Cell* cell = m_cells[i];
 		QCheckBox* checker = m_checkers[i];
 		QTextEdit* editor = m_editors[i];
-		editor->setText(tr("<span style=\" color:#%1;\">%2</span>").arg(getColorStr(cell->getColor()))
+		editor->setText(tr("<span style=\" color:#%1;\">%2</span>")
+				.arg(getColorStr(cell->getColor()))
 				.arg(cell->getSize()));
 		checker->setText(tr("%1 : ").arg(cell->getTrack()->trackId() + 1));
 		if(marked_cells_set.find(m_cells[i]) != marked_cells_set.end())

@@ -23,13 +23,13 @@ HEADERS += widgets/glwidget.h \
     ../CT3D/cell_track.h \
     ../CT3D/palette.h \
     dialogs/createdialog.h \
-    dialogs/regionadjustdialog.h \
     dialogs/filterdialog.h \
-	extends/cell_track_ex.h
+    extends/cell_track_ex.h \
+    dialogs/finetuningdialog.h
 FORMS += widgets/at3d_view.ui \
     dialogs/createdialog.ui \
-    dialogs/regionadjustdialog.ui \
-    dialogs/filterdialog.ui
+    dialogs/finetuningdialog.ui \
+    dialogs/filterdialog.ui 
 SOURCES += widgets/glwidget.cpp \
     widgets/cellwidget.cpp \
     ../myalgorithms.cpp \
@@ -40,6 +40,6 @@ SOURCES += widgets/glwidget.cpp \
     ../CT3D/cell_track.cpp \
     ../CT3D/palette.cpp \
     dialogs/createdialog.cpp \
-    dialogs/regionadjustdialog.cpp \
     dialogs/filterdialog.cpp \
-	extends/cell_track_ex.cpp
+    extends/cell_track_ex.cpp \
+    dialogs/finetuningdialog.cpp

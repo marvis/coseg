@@ -59,10 +59,12 @@ class ComponentTree
 				vector<Pixel*> getBetaPixels();
 				vector<int> getAlphaPoints();
 				vector<int> getBetaPoints();
+				vector<int> getCenterPoints(int width, int height, int depth);
 				void merge_node(Node* node);  // node may be a child
 				Nodes getPostOrderNodes() const; //return all the node which stores in post order, equilivalent to m_root
 				Nodes getPreOrderNodes() const; //return all the node which stores in post order, equilivalent to m_root
 				Nodes getBreadthFirstNodes() const; //return all the node which stores in post order, equilivalent to m_root
+				vector<Node*>& getChilds();
 				int getTreeHeight() const;       // the distant from root, the root node with height 0
 
 				int getLabel() const;

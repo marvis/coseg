@@ -6,6 +6,7 @@
 #include <stack>
 #include "widgets/glwidget.h"
 #include "widgets/cellwidget.h"
+#include "dialogs/finetuningdialog.h"
 #include "../CT3D/cell_track_controller.h"
 #include "../component_tree.h"
 #include "ui_at3d_view.h"
@@ -26,7 +27,9 @@ private slots:
 	/************************
 	 * File Group
 	 ************************/
-	void onOpen();
+        void on_fineTuningButton_clicked();
+
+        void onOpen();
 	
 	void onLoadResult();
 	

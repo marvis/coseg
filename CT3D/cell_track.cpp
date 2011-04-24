@@ -468,140 +468,183 @@ void CellTrack::releaseAllCells()
 	===========================================*/
 }
 
-bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2,vector<CellTrack::Frame*> &frames)
+bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2,vector<CellTrack::Frame*> &frames/*, int method*/)
 {
-	assert(frames.empty());
-
-	if(tree1->width() != tree2->width() || tree1->height() != tree2->height() || tree1->depth() != tree2->depth())
+	int method = 0;
+	if(method == 0) // ILP programming
 	{
-		cerr<<"The two trees with different size. Unalbe to align."<<endl;
-		return false;
-	}
+		assert(frames.empty());
 
-	// 1. get weights
-	vector<float> weights;
-	tree1->setWeightMatrix(tree2, weights);
-	int numVars1 = (int)tree1->nodeNum();
-	int numVars2 = (int)tree2->nodeNum();
-	assert((int)weights.size() == numVars1 * numVars2);
-	/*
-	for(int i = 0; i < numVars1; i++)
-	{
-		for(int j = 0; j < numVars2; j++)
+		if(tree1->width() != tree2->width() || tree1->height() != tree2->height() || tree1->depth() != tree2->depth())
 		{
-			cout<<weights[i*numVars2 + j]<<" ";
-		}
-		cout<<endl;
-	}
-*/
-	vector<vector<int> > paths1 = tree1->getPaths();
-	vector<vector<int> > paths2 = tree2->getPaths();
-
-	// 2. linear model
-	lprec *lp;
-	int Ncol, *colno=NULL, k;       
-	REAL * row = NULL;
-	int i=0,j=0;
-	Ncol = numVars1 * numVars2; 
-	lp = make_lp(0,Ncol);           
-	if(lp == NULL) return false;    
-
-	colno = (int *) malloc(Ncol * sizeof(*colno));
-	row = (REAL *) malloc(Ncol * sizeof(*row));
-	if((colno == NULL) || (row == NULL)) return false;
-	for(i=0;i< Ncol;i++) row[i]=1.0; // assign all the content of row as 1
-
-	set_add_rowmode(lp,TRUE);
-	set_binary(lp,Ncol,TRUE);
-
-	// add paths1 constraints
-	// one path one constraint
-
-	ComponentTree::Paths::iterator it=paths1.begin();
-	while(it != paths1.end())
-	{
-		k=0;
-		ComponentTree::Path::iterator itr = (*it).begin();
-		while(itr != (*it).end())
-		{
-			i = (*itr);
-			for(j=0;j<numVars2;j++)colno[k++] = i*numVars2+j+1;
-			itr++;
-		}
-		if(!add_constraintex(lp, k, row, colno, LE, 1))
+			cerr<<"The two trees with different size. Unalbe to align."<<endl;
 			return false;
-		it++;
-	}
-	// add paths2 constraints
-	it=paths2.begin();
-	while (it != paths2.end())
-	{
-		ComponentTree::Path::iterator itr = (*it).begin();
-		k=0;
-		while(itr != (*it).end())
-		{
-			j = (*itr);
-			for(i=0;i<numVars1;i++)colno[k++] = i*numVars2+j+1;
-			itr++;
 		}
-		if(!add_constraintex(lp, k, row, colno, LE, 1))
-			return false;
-		it++;
-	}
-	set_add_rowmode(lp,FALSE);	
 
-	// add the object
-	k=0;
-	for(i=0;i< numVars1; i++)
-		for(j=0; j< numVars2; j++)
+		// 1. get weights
+		vector<float> weights;
+		tree1->setWeightMatrix(tree2, weights);
+		int numVars1 = (int)tree1->nodeNum();
+		int numVars2 = (int)tree2->nodeNum();
+		assert((int)weights.size() == numVars1 * numVars2);
+		/*
+		   for(int i = 0; i < numVars1; i++)
+		   {
+		   for(int j = 0; j < numVars2; j++)
+		   {
+		   cout<<weights[i*numVars2 + j]<<" ";
+		   }
+		   cout<<endl;
+		   }
+		   */
+		vector<vector<int> > paths1 = tree1->getPaths();
+		vector<vector<int> > paths2 = tree2->getPaths();
+
+		// 2. linear model
+		lprec *lp;
+		int Ncol, *colno=NULL, k;       
+		REAL * row = NULL;
+		int i=0,j=0;
+		Ncol = numVars1 * numVars2; 
+		lp = make_lp(0,Ncol);           
+		if(lp == NULL) return false;    
+
+		colno = (int *) malloc(Ncol * sizeof(*colno));
+		row = (REAL *) malloc(Ncol * sizeof(*row));
+		if((colno == NULL) || (row == NULL)) return false;
+		for(i=0;i< Ncol;i++) row[i]=1.0; // assign all the content of row as 1
+
+		set_add_rowmode(lp,TRUE);
+		set_binary(lp,Ncol,TRUE);
+
+		// add paths1 constraints
+		// one path one constraint
+
+		ComponentTree::Paths::iterator it=paths1.begin();
+		while(it != paths1.end())
 		{
-			colno[k] = i*numVars2+j+1; //todo: why i*numVar2 + j + 1
-			row[k++] = weights[i * numVars2 + j];
-		}
-	if(!set_obj_fnex(lp, k, row, colno))return false;
-	set_maxim(lp);
-	set_verbose(lp,IMPORTANT);
-
-	// 3. solve the linear problem
-	if(::solve(lp) != OPTIMAL)
-	{
-		cout<<"Not optimized results"<<endl;
-		return false;
-	}
-	// 4. save results to row
-	get_variables(lp,row);
-	Frame* frame1 = new Frame();
-	Frame* frame2 = new Frame();
-	frame1->setTree(tree1);
-	frame2->setTree(tree2);
-
-	for(i = 0; i < numVars1; i++)
-	{
-		for(int j = 0; j < numVars2; j++)
-		{
-			if(fabs(row[i * numVars2 + j] - 1.0) < 0.1)
+			k=0;
+			ComponentTree::Path::iterator itr = (*it).begin();
+			while(itr != (*it).end())
 			{
-				Cell* cell1 = new Cell;
-				Cell* cell2 = new Cell;
-				cell1->setCurNode(tree1->getNode(i));
-				cell2->setCurNode(tree2->getNode(j));
-				cell1->setNextCell(cell2);
-				cell2->setPrevCell(cell1); 
-				frame1->addCell(cell1);
-				frame2->addCell(cell2);
+				i = (*itr);
+				for(j=0;j<numVars2;j++)colno[k++] = i*numVars2+j+1;
+				itr++;
+			}
+			if(!add_constraintex(lp, k, row, colno, LE, 1))
+				return false;
+			it++;
+		}
+		// add paths2 constraints
+		it=paths2.begin();
+		while (it != paths2.end())
+		{
+			ComponentTree::Path::iterator itr = (*it).begin();
+			k=0;
+			while(itr != (*it).end())
+			{
+				j = (*itr);
+				for(i=0;i<numVars1;i++)colno[k++] = i*numVars2+j+1;
+				itr++;
+			}
+			if(!add_constraintex(lp, k, row, colno, LE, 1))
+				return false;
+			it++;
+		}
+		set_add_rowmode(lp,FALSE);	
+
+		// add the object
+		k=0;
+		for(i=0;i< numVars1; i++)
+			for(j=0; j< numVars2; j++)
+			{
+				colno[k] = i*numVars2+j+1; //todo: why i*numVar2 + j + 1
+				row[k++] = weights[i * numVars2 + j];
+			}
+		if(!set_obj_fnex(lp, k, row, colno))return false;
+		set_maxim(lp);
+		set_verbose(lp,IMPORTANT);
+
+		// 3. solve the linear problem
+		if(::solve(lp) != OPTIMAL)
+		{
+			cout<<"Not optimized results"<<endl;
+			return false;
+		}
+		// 4. save results to row
+		get_variables(lp,row);
+		Frame* frame1 = new Frame();
+		Frame* frame2 = new Frame();
+		frame1->setTree(tree1);
+		frame2->setTree(tree2);
+
+		for(i = 0; i < numVars1; i++)
+		{
+			for(int j = 0; j < numVars2; j++)
+			{
+				if(fabs(row[i * numVars2 + j] - 1.0) < 0.1)
+				{
+					Cell* cell1 = new Cell;
+					Cell* cell2 = new Cell;
+					cell1->setTree(tree1);
+					cell2->setTree(tree2);
+					cell1->setCurNodeLabel(i);
+					cell2->setCurNodeLabel(j);
+					cell1->setNextCell(cell2);
+					cell2->setPrevCell(cell1); 
+					frame1->addCell(cell1);
+					frame2->addCell(cell2);
+				}
 			}
 		}
+
+		frames.push_back(frame1);
+		frames.push_back(frame2);
+
+		if(colno != NULL) free(colno);
+		if(row != NULL) free(row);
+		if(lp != NULL) delete_lp(lp);
+
+		return true;
 	}
+	else if(method == 1)  // three point condition
+	{/*
+		assert(frames.empty());
+		if(tree1->width() != tree2->width() || tree1->height() != tree2->height() || tree1->depth() != tree2->depth())
+		{
+			cerr<<"The two trees with different size. Unalbe to align."<<endl;
+			return false;
+		}
+		// 1. get weights
+		vector<float> weights;
+		tree1->setWeightMatrix(tree2, weights);
+		//assert((int)weights.size() == numVars1 * numVars2);
 
-	frames.push_back(frame1);
-	frames.push_back(frame2);
+		vector<ComponentTree::Node*> nodes1 = tree1->root()->getPostOrderNodes();
+		vector<ComponentTree::Node*> nodes2 = tree2->root()->getPostOrderNodes();
+		map<ComponentTree::Node*, int> rev_nodes1;
+		map<ComponentTree::Node*, int> rev_nodes2;
+		for(int i = 0; i < nodes1.size(); i++) rev_nodes1[nodes1[i]] = i;
+		for(int i = 0; i < nodes2.size(); i++) rev_nodes2[nodes2[i]] = i;
 
-	if(colno != NULL) free(colno);
-	if(row != NULL) free(row);
-	if(lp != NULL) delete_lp(lp);
-
-	return true;
-
+		int numVars1 = (int)tree1->nodeNum();
+		int numVars2 = (int)tree2->nodeNum();
+		vector<float> wvt(numVars1*numVars2, 0.0);
+		vector<float> wtv(numVars1*numVars2, 0.0);
+		vector<float> wtt(numVars1*numVars2, 0.0);
+		//calc wvt
+		for(int i = 0; i < numVars1; i++)
+		{
+			ComponentTree::Node* node1 = nodes1[i];
+			for(int j = 0; j < numVars2; j++)
+			{
+				ComponentTree::Node* node2 = nodes2[j];
+				vector<ComponentTree::Node*> & childs = node2->getChilds(); 
+				
+			}
+		}
+		*/
+	}
 }
 
 bool CellTrack::createFramesFromTrees(vector<char*> tree_files,vector<CellTrack::Frame*> &frames)
@@ -716,7 +759,7 @@ CellTrack::Cell::Cell()
 	m_next_cell = NULL;
 
 	m_track = NULL;
-	m_vertices.clear();
+	m_tree = NULL;
 
 	m_color = 0;
 }
@@ -736,12 +779,21 @@ void CellTrack::Cell::setTrack(CellTrack::Track* track)
 	m_track = track;
 }
 
+ComponentTree* CellTrack::Cell::getTree() const
+{
+	return m_tree;
+}
+void CellTrack::Cell::setTree(ComponentTree* tree)
+{
+	m_tree = tree;
+}
+
 /**
  * normally c = 3
  * **/
-void CellTrack::Cell::draw(unsigned char* image, /*int w, int h, int d, int c,*/ ComponentTree* tree)
+void CellTrack::Cell::draw(unsigned char* image)
 {
-	vector<int> & vertices = getVertices(tree);
+	vector<int> & vertices = getVertices();
 	if(vertices.empty()) return;
 	vector<int>::iterator it = vertices.begin();
 	int color = this->getColor();
@@ -758,9 +810,9 @@ void CellTrack::Cell::draw(unsigned char* image, /*int w, int h, int d, int c,*/
 	}
 }
 
-void CellTrack::Cell::drawMarker(unsigned char* image, int w, int h, int d, ComponentTree* tree)
+void CellTrack::Cell::drawMarker(unsigned char* image)
 {
-	vector<int> &vertices = getCenterArea(w, h, d, tree);
+	vector<int> &vertices = getCenterArea();
 	assert(!vertices.empty());
 	if(vertices.empty()) return;
 	vector<int>::iterator it = vertices.begin();
@@ -776,19 +828,21 @@ void CellTrack::Cell::drawMarker(unsigned char* image, int w, int h, int d, Comp
 		image[index + 2] = b;
 		it++;
 	}
-
 }
 
-vector<int>& CellTrack::Cell::getCenterArea(int width, int height, int depth, ComponentTree* tree) 
+vector<int>& CellTrack::Cell::getCenterArea() 
 {
+	int width = m_tree->width();
+	int height = m_tree->height();
+	int depth = m_tree->depth();
 	if(!m_center_area.empty()) return m_center_area;
 	float mean_x, mean_y, mean_z;
-	getCenter(mean_x, mean_y, mean_z, width, height, depth);
+	getCenter(mean_x, mean_y, mean_z);
 	int cell_width = 0; 
 	int cell_height = 0;
 	int cell_depth = 0;
 
-	vector<int> vertices = getVertices(tree);
+	vector<int> vertices = getVertices();
 	int min_x = INT_MAX;
 	int min_y = INT_MAX;
 	int min_z = INT_MAX;
@@ -829,64 +883,74 @@ vector<int>& CellTrack::Cell::getCenterArea(int width, int height, int depth, Co
 		}
 		it++;
 	}
+
 	return m_center_area;
 }
 
-void CellTrack::Cell::setCenterArea()
+int CellTrack::Cell::getFirNodeLabel() const
 {
+	return m_fir_node_label;
 }
 
-TNode* CellTrack::Cell::getFirNode(ComponentTree* tree) const
+void CellTrack::Cell::setFirNodeLabel(int label)
 {
-	return tree->getNode(m_fir_node_label);
+	m_fir_node_label = label;
 }
 
-void CellTrack::Cell::setFirNode(TNode* node)
+int CellTrack::Cell::getSecNodeLabel() const
 {
-	m_fir_node_label = node->getLabel();
+	return m_sec_node_label;
 }
 
-TNode* CellTrack::Cell::getSecNode(ComponentTree* tree) const
+void CellTrack::Cell::setSecNodeLabel(int label)
 {
-	return tree->getNode(m_sec_node_label);
+	m_sec_node_label = label;
 }
 
-void CellTrack::Cell::setSecNode(TNode* node)
+int CellTrack::Cell::getCurNodeLabel() const
 {
-	m_sec_node_label = node->getLabel();
+	return m_cur_node_label;
 }
 
-TNode* CellTrack::Cell::getCurNode(ComponentTree* tree) const
+void CellTrack::Cell::setCurNodeLabel(int label)
 {
-	return tree->getNode(m_cur_node_label);
+	m_cur_node_label = label;
 }
 
-void CellTrack::Cell::setCurNode(TNode* node)
+int CellTrack::Cell::getModNodeLabel() const
 {
-	m_cur_node_label = node->getLabel();
+	return m_mod_node_label;
 }
 
-TNode* CellTrack::Cell::getModNode(ComponentTree* tree) const
+void CellTrack::Cell::setModNodeLabel(int label)
 {
-	return tree->getNode(m_mod_node_label);
+	m_mod_node_label = label;
 }
 
-void CellTrack::Cell::setModNode(TNode* node)
+int CellTrack::Cell::getNodeLabel() const
 {
-	m_mod_node_label = node->getLabel();
-}
-
-TNode* CellTrack::Cell::getNode(ComponentTree* tree) const
-{
-	if(m_mod_node_label != -1) return tree->getNode(m_mod_node_label);
-	else if(m_cur_node_label != -1) return tree->getNode(m_cur_node_label);
+	if(m_mod_node_label != -1) return m_mod_node_label;
+	else if(m_cur_node_label != -1) return m_cur_node_label;
 	else if(m_sec_node_label != -1 || m_fir_node_label != -1)
 	{
-		if(m_fir_node_label != -1) return tree->getNode(m_fir_node_label);
-		if(m_sec_node_label != -1) return tree->getNode(m_sec_node_label);
+		if(m_fir_node_label != -1) return m_fir_node_label;
+		if(m_sec_node_label != -1) return m_sec_node_label;
 	}
-	cerr<<"Cell::getNode error, no effective node label"<<endl;
-	return NULL;
+	return -1;
+}
+
+TNode* CellTrack::Cell::getNode() const
+{
+	int label = getNodeLabel();
+	if(label == -1)
+	{
+		cerr<<"Cell::getNode error, no effective node label"<<endl;
+		return NULL;
+	}
+	else
+	{
+		return m_tree->getNode(label);
+	}
 }
 
 CellTrack::Cell* CellTrack::Cell::getPrevCell() const
@@ -909,12 +973,12 @@ void CellTrack::Cell::setNextCell(CellTrack::Cell* next_cell)
 	m_next_cell = next_cell;
 }
 
-vector<int>& CellTrack::Cell::getVertices(ComponentTree* tree)
+vector<int>& CellTrack::Cell::getVertices()
 {
 	if(!m_vertices.empty()) return m_vertices;
-	else if(tree != NULL)
+	else if(m_tree != NULL)
 	{
-		m_vertices = this->getNode(tree)->getBetaPoints();
+		m_vertices = this->getNode()->getBetaPoints();
 		return m_vertices;
 	}
 	else
@@ -924,24 +988,28 @@ vector<int>& CellTrack::Cell::getVertices(ComponentTree* tree)
 	}
 }
 
-int CellTrack::Cell::getSize() const
+int CellTrack::Cell::getSize()
 {
 	if(m_vertices.empty())
 	{
-		return -1;
+		//	return -1;
+		return getVertices().size();
 	}
-	else return m_vertices.size();
+	return m_vertices.size();
 }
 /**************************************************************
  * Volume will be calculated in a kind of formula
  * ************************************************************/
-int CellTrack::Cell::getVolume() const
+int CellTrack::Cell::getVolume()
 {
 	return getSize();
 }
 
-void CellTrack::Cell::getCenter(float & mean_w, float & mean_h, float &mean_d, int w, int h, int d)
+void CellTrack::Cell::getCenter(float & mean_w, float & mean_h, float &mean_d)
 {
+	int w = m_tree->width();
+	int h = m_tree->height();
+	int d = m_tree->depth();
 	vector<int>& vertices = getVertices();
 	vector<int>::iterator it = vertices.begin();
 	mean_w = 0.0;
@@ -996,9 +1064,11 @@ void CellTrack::Frame::exportImage(char* img_file/*, Palette& palette*/)
 	unsigned char* img = new unsigned char[size*3];
 	for(int i = 0; i < 3*size; i++) img[i] = 0;
 	vector<Cell*>::iterator it = m_cells.begin();
+	//ComponentTree* tree = this->getTree();
 	while(it != m_cells.end())
 	{
-		vector<int> vertices = (*it)->getVertices(this->getTree());
+		//(*it)->setTree(tree); // not needed maybe
+		vector<int>& vertices = (*it)->getVertices();
 		assert(!vertices.empty());
 		//int color_id = (*it)->getTrack()->getColorId();
 		//unsigned char r = palette(color_id).r; //rand() % 256;
@@ -1090,7 +1160,8 @@ void CellTrack::Frame::mergePrevFrame(CellTrack::Frame* prev_frame)
 	int id = 0;
 	while(it != cells1.end())
 	{
-		vector<int> vertices = (*it)->getVertices(tree);
+		//(*it)->setTree(tree); // not needed maybe
+		vector<int> vertices = (*it)->getVertices();
         vector<int>::iterator itr = vertices.begin();
         while(itr != vertices.end())
         {
@@ -1104,7 +1175,8 @@ void CellTrack::Frame::mergePrevFrame(CellTrack::Frame* prev_frame)
 	id = 0;
 	while(it != cells2.end())
 	{
-		vector<int> vertices = (*it)->getVertices(tree);
+		//(*it)->setTree(tree); // not needed maybe
+		vector<int> vertices = (*it)->getVertices();
         vector<int>::iterator itr = vertices.begin();
         while(itr != vertices.end())
         {
@@ -1135,7 +1207,7 @@ void CellTrack::Frame::mergePrevFrame(CellTrack::Frame* prev_frame)
 			//if(weight[i*cells2Num + j] && the_j == -1) the_j = j;
 			if(weight[i*cells2Num + j]) 
 			{
-				if(j > the_j) the_j = j;
+				if(j > the_j) the_j = j; // get the maximum the_j
 			}
 		}
 		//assert(sum <= 1);
@@ -1143,14 +1215,24 @@ void CellTrack::Frame::mergePrevFrame(CellTrack::Frame* prev_frame)
 		if(sum)
 		{
 			assert(tree != NULL);
-			cells2[the_j]->setFirNode(cells1[i]->getCurNode(tree));
-			cells2[the_j]->setSecNode(cells2[the_j]->getCurNode(tree));	
-			int cur_label = cells1[i]->m_cur_node_label > cells2[the_j]->m_cur_node_label ? cells1[i]->m_cur_node_label:  cells2[the_j]->m_cur_node_label;
-			cells2[the_j]->setCurNode(tree->getNode(cur_label));
-			Cell* prev_cell = cells1[i]->getPrevCell();
-			cells2[the_j]->setPrevCell(prev_cell);
-			prev_cell->setNextCell(cells2[the_j]);
-			delete cells1[i];
+			int fir_node = cells2[the_j]->getFirNodeLabel();
+			if(cells1[i]->getFirNodeLabel() > fir_node) // consider multiple i to j
+			{
+				if(fir_node > -1)
+				{
+					Cell* prev_cell = cells2[the_j]->getPrevCell();
+					prev_cell->setNextCell(NULL);
+					cells2[the_j]->setPrevCell(NULL);
+				}
+				cells2[the_j]->setFirNodeLabel(cells1[i]->getCurNodeLabel());
+				cells2[the_j]->setSecNodeLabel(cells2[the_j]->getCurNodeLabel());	
+				int cur_label = cells1[i]->m_cur_node_label > cells2[the_j]->m_cur_node_label ? cells1[i]->m_cur_node_label:  cells2[the_j]->m_cur_node_label;
+				cells2[the_j]->setCurNodeLabel(cur_label);
+				Cell* prev_cell = cells1[i]->getPrevCell();
+				cells2[the_j]->setPrevCell(prev_cell);
+				prev_cell->setNextCell(cells2[the_j]);
+				delete cells1[i];
+			}
 		}
 		else
 		{
@@ -1194,6 +1276,13 @@ ComponentTree* CellTrack::Frame::getTree()
 	else if(!m_tree_file.empty())
 	{
 		m_tree = new ComponentTree((char*) m_tree_file.c_str());
+		vector<Cell*> cells = this->getCells();
+		vector<Cell*>::iterator it = cells.begin();
+		while(it != cells.end())
+		{
+			(*it)->setTree(m_tree);
+			it++;
+		}
 		return m_tree;
 	}
 	else 
@@ -1226,7 +1315,7 @@ bool CellTrack::Frame::correspondToTree(ComponentTree* tree)
 	{
 		Cell* cell = *it;
 		TNode* node = tree->getNode(cell->getVertices());
-		if(node != NULL) cell->setCurNode(node);
+		if(node != NULL) cell->setCurNodeLabel(node->getLabel());
 		else return false;
 		it++;
 	}
@@ -1243,6 +1332,13 @@ void CellTrack::Frame::releaseTree(char* tree_file)
 	{
 		m_tree->clear();
 		m_tree = NULL;
+	}
+	vector<Cell*> cells = this->getCells();
+	vector<Cell*>::iterator it = cells.begin();
+	while(it != cells.end())
+	{
+		(*it)->setTree(NULL);
+		it++;
 	}
 }
 

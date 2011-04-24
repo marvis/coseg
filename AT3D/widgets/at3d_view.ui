@@ -79,9 +79,9 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="adjustRegionButton">
+          <widget class="QPushButton" name="fineTuningButton">
            <property name="text">
-            <string>Adjust Region</string>
+            <string>Fine Tuning</string>
            </property>
           </widget>
          </item>

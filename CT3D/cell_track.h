@@ -43,26 +43,29 @@ class CellTrack
 			Cell();
 			Track* getTrack() const;
 			void setTrack(Track*);
+			ComponentTree* getTree() const;
+			void setTree(ComponentTree* tree);
 			//float meanHeight() const;
-			void draw(unsigned char* image,/* int w, int h, int d, int c=3,*/ ComponentTree* tree = NULL);
-			void drawMarker(unsigned char* image, int w, int h, int d, ComponentTree* tree);
+			void draw(unsigned char* image);
+			void drawMarker(unsigned char* image);
 
-			vector<int>&  getCenterArea(int width, int height, int depth, ComponentTree* tree);
-			void setCenterArea();
+			vector<int>&  getCenterArea();  // will set cetner area too
+			//void setCenterArea();
 
-			TNode* getFirNode(ComponentTree*) const;                    // the first alignment result
-			void setFirNode(TNode*);                    // the first alignment result
+			int getFirNodeLabel() const;                    // the first alignment result
+			void setFirNodeLabel(int label);                    // the first alignment result
 
-			TNode* getSecNode(ComponentTree*) const;                    // the second alignment result
-			void setSecNode(TNode*);                    // the second alignment result
+			int getSecNodeLabel() const;                    // the second alignment result
+			void setSecNodeLabel(int label);                    // the second alignment result
 
-			TNode* getCurNode(ComponentTree*) const;                    // original node
-			void setCurNode(TNode* );                    // original node
+			int getCurNodeLabel() const;                    // original node
+			void setCurNodeLabel(int label );                    // original node
 
-			TNode* getModNode(ComponentTree*) const;                    // modified node
-			void setModNode(TNode*);                    // modified node
+			int  getModNodeLabel() const;                    // modified node
+			void setModNodeLabel(int label);                    // modified node
 
-			TNode* getNode(ComponentTree*) const;
+			int getNodeLabel() const;
+			TNode* getNode() const;
 
 			Cell* getPrevCell() const;
 			void  setPrevCell(Cell*);
@@ -70,10 +73,10 @@ class CellTrack
 			Cell* getNextCell() const;
 			void  setNextCell(Cell*);
 
-			vector<int>& getVertices(ComponentTree* tree = NULL);
-			int getVolume() const;
-			int getSize() const;
-			void getCenter(float & mean_w, float& mean_h, float & mean_d, int w, int h, int d);
+			vector<int>& getVertices();
+			int getVolume();
+			int getSize();
+			void getCenter(float & mean_w, float& mean_h, float & mean_d);
 
 			unsigned int getColor() const;
 			void setColor(unsigned int color);
@@ -89,6 +92,7 @@ class CellTrack
 			vector<int> m_center_area;
 
 			Track* m_track;              // used when in choose and remove operation
+			ComponentTree* m_tree;
 			unsigned int m_color; // used only in createFromImages
 	};
 

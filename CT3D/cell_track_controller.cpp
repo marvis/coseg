@@ -144,7 +144,7 @@ unsigned char* CellTrackController::getTexData()
 	ComponentTree* tree = celltrack->getFrame(current_time)->getTree();
 	while(it != visable_cells.end())
 	{
-		(*it)->draw(image,/* w, h, d, 3,*/ tree);
+		(*it)->draw(image);
 		it++;
 	}
 	//cout<<"cell num = "<<visable_cells.size()<<endl;
@@ -152,7 +152,7 @@ unsigned char* CellTrackController::getTexData()
 	it = marked_cells.begin();
 	while(it != marked_cells.end())
 	{
-		(*it)->drawMarker(image, w, h, d, tree);
+		(*it)->drawMarker(image);
 		it++;
 	}
 	return image;
@@ -398,7 +398,7 @@ void CellTrackController::setCellCenters()
 	while(it != cells.end())
 	{
 		float mean_x, mean_y, mean_z;
-		 (*it)->getCenter(mean_x, mean_y, mean_z, w, h, d);
+		 (*it)->getCenter(mean_x, mean_y, mean_z);
 		 vector<float> center;
 		 center.push_back(mean_x);
 		 center.push_back(mean_y);

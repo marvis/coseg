@@ -6,6 +6,7 @@ FilterDialog::FilterDialog(QWidget *parent) :
     ui(new Ui::FilterDialog)
 {
     ui->setupUi(this);
+	
 }
 
 FilterDialog::~FilterDialog()

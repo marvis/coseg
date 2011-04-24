@@ -265,6 +265,7 @@ void AT3DVIEW::clear()
 	}
 }
 
+// signal flow : glwidget -> cellwidget -> AT3DVIEW
 void AT3DVIEW::onCellMarked(float x, float y)
 {
 	CellTrack::Cell* cell = this->getClickedCell(x,y,0.0);
@@ -300,4 +301,23 @@ void AT3DVIEW::onCellMarked(CellTrack::Cell* cell)
 	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
 	m_glWidget->updateGL();
 	//m_cellWidget->setCells(celltrack->getFrame(current_time)->getCells(), this->getMarkedCells());
+}
+
+void AT3DVIEW::on_fineTuningButton_clicked()
+{
+    vector<CellTrack::Cell*> cells = this->getMarkedCells();
+    if(cells.size() != 1)
+    {
+            QMessageBox::information(this,"","Please choose only one cell!");
+            return;
+    }
+    CellTrack::Cell* cell = cells[0];
+	ComponentTree* tree = cell->getTree();
+    int node_label = cell->getNodeLabel();
+	cout<<"node_label = "<<node_label<<" size = "<<tree->getNode(node_label)->getBetaSize()<<endl;
+
+    FineTuningDialog* dlg = new FineTuningDialog();
+    dlg->setModal(true);
+    dlg->setParameters(tree, node_label);
+    dlg->exec();
 }

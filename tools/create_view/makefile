@@ -4,12 +4,15 @@ CXX = g++ -g -Wall
 CXXFLAGS = -ltiff
 
 OBJ_CREATE = ../../myalgorithms.o ../../component_tree.o  create_tree.o
-OBJ_VIEW = ../../myalgorithms.o ../../component_tree.o  view_tree.o
+OBJ_VIEW_TREE = ../../myalgorithms.o ../../component_tree.o  view_tree.o
+OBJ_VIEW_DEGREE = ../../myalgorithms.o ../../component_tree.o  view_degree.o
 
-all: view_tree create_tree
+all: view_tree create_tree view_degree
 
-view_tree: $(OBJ_VIEW)
-	$(CXX) $(CXXFLAGS) $(OBJ_VIEW) -o view_tree
+view_tree: $(OBJ_VIEW_TREE)
+	$(CXX) $(CXXFLAGS) $(OBJ_VIEW_TREE) -o view_tree
+view_degree: $(OBJ_VIEW_DEGREE)
+	$(CXX) $(CXXFLAGS) $(OBJ_VIEW_DEGREE) -o view_degree
 create_tree: $(OBJ_CREATE)
 	$(CXX) $(CXXFLAGS) $(OBJ_CREATE) -o create_tree
 
