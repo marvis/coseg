@@ -49,6 +49,7 @@ class CellTrack
 			void draw(unsigned char* image);
 			void drawMarker(unsigned char* image);
 
+			void setCenterArea();
 			vector<int>&  getCenterArea();  // will set cetner area too
 			//void setCenterArea();
 
@@ -73,6 +74,7 @@ class CellTrack
 			Cell* getNextCell() const;
 			void  setNextCell(Cell*);
 
+			void setVertices();
 			vector<int>& getVertices();
 			int getVolume();
 			int getSize();
@@ -153,8 +155,9 @@ class CellTrack
 			vector<Cell*> getCells() const;
 			int cellNum() const;
 			int trackId() const;
+			int startTime() const;
 		private:
-			//int m_start_time;        // 0 for the first time
+			int m_start_time;        // 0 for the first time
 			//vector<Cell*> m_cells;
 			Cell* m_entry_cell;
 			//int m_color_id;

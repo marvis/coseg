@@ -371,8 +371,8 @@ CellTrack* CellTrack::clip(int frame_start_id, int frame_end_id)
 
 CellTrack::Frame* CellTrack::getFrame(int time) const
 {
-	assert(! m_frames.empty());
-	assert(time < (int)this->frameNum());
+	if(m_frames.empty()) return NULL;
+	if(time >= (int)this->frameNum()) return NULL;
 	return m_frames[time];
 }
 
@@ -727,7 +727,7 @@ bool CellTrack::createTracksFromFrames(CellTrack::Frames& frames, vector<CellTra
 			if((*itr)->getPrevCell() == NULL)
 			{
 				Track* track = new Track;
-				//track->m_start_time = t;
+				track->m_start_time = t;
 				track->m_entry_cell = (*itr);
 				track->m_color = (*itr)->m_color;
 				track->m_track_id = track_id++;
@@ -826,6 +826,61 @@ void CellTrack::Cell::drawMarker(unsigned char* image)
 		image[index] = r;
 		image[index + 1] = g;
 		image[index + 2] = b;
+		it++;
+	}
+}
+
+void CellTrack::Cell::setCenterArea()
+{
+	m_center_area.clear();
+	int width = m_tree->width();
+	int height = m_tree->height();
+	int depth = m_tree->depth();
+	float mean_x, mean_y, mean_z;
+	getCenter(mean_x, mean_y, mean_z);
+	int cell_width = 0; 
+	int cell_height = 0;
+	int cell_depth = 0;
+
+	vector<int> vertices = getVertices();
+	int min_x = INT_MAX;
+	int min_y = INT_MAX;
+	int min_z = INT_MAX;
+	int max_x = 0;
+	int max_y = 0;
+	int max_z = 0;
+
+	vector<int>::iterator it = vertices.begin();
+	while(it != vertices.end())
+	{
+		int w = (*it) % width;
+		int h = (*it) / width % height;
+		int d = (*it) / width / height % depth;
+		min_x = w < min_x ? w : min_x;
+		min_y = h < min_y ? h : min_y;
+		min_z = d < min_z ? d : min_z;
+		max_x = w > max_x ? w : max_x;
+		max_y = h > max_y ? h : max_y;
+		max_z = d > max_z ? d : max_z;
+		it++;
+	}
+	cell_width = max_x - min_x;
+	cell_height = max_y - min_y;
+	cell_depth = max_z - min_z;
+
+	float aa = (cell_width/2.0)*(cell_width/2.0)/4.0;
+	float bb = (cell_height/2.0)*(cell_height/2.0)/4.0;
+	float cc = (cell_depth/2.0)*(cell_depth/2.0)/4.0;
+	it = vertices.begin();
+	while(it != vertices.end())
+	{
+		int x = (*it) % width;
+		int y = (*it) / width % height;
+		int z = (*it) / width / height % depth;
+		if((x - mean_x)*(x - mean_x)/aa + (y - mean_y)*(y - mean_y)/bb + (z - mean_z)*(z - mean_z)/cc <= 1.0)
+		{
+			m_center_area.push_back((int)(*it));
+		}
 		it++;
 	}
 }
@@ -985,6 +1040,16 @@ vector<int>& CellTrack::Cell::getVertices()
 	{
 		//cerr<<"Cell::getVertices: Unable to get vertices"<<endl;
 		return m_vertices;
+	}
+}
+
+void CellTrack::Cell::setVertices()
+{
+	if(m_tree == NULL) return;
+	else 
+	{
+		m_vertices.clear();
+		m_vertices = getNode()->getBetaPoints();
 	}
 }
 
@@ -1216,13 +1281,13 @@ void CellTrack::Frame::mergePrevFrame(CellTrack::Frame* prev_frame)
 		{
 			assert(tree != NULL);
 			int fir_node = cells2[the_j]->getFirNodeLabel();
-			if(cells1[i]->getFirNodeLabel() > fir_node) // consider multiple i to j
+			if(true)//cells1[i]->getFirNodeLabel() > fir_node) // consider multiple i to j
 			{
 				if(fir_node > -1)
 				{
-					Cell* prev_cell = cells2[the_j]->getPrevCell();
-					prev_cell->setNextCell(NULL);
-					cells2[the_j]->setPrevCell(NULL);
+					//Cell* prev_cell = cells2[the_j]->getPrevCell();
+					//prev_cell->setNextCell(NULL);
+					//cells2[the_j]->setPrevCell(NULL);
 				}
 				cells2[the_j]->setFirNodeLabel(cells1[i]->getCurNodeLabel());
 				cells2[the_j]->setSecNodeLabel(cells2[the_j]->getCurNodeLabel());	
@@ -1406,7 +1471,7 @@ int CellTrack::Frame::depth() const
 
 CellTrack::Track::Track()
 {
-	//m_start_time = -1;
+	m_start_time = -1;
 	m_entry_cell = NULL;
 	//m_color_id = -1;
 	m_color = 0;
@@ -1471,4 +1536,8 @@ int CellTrack::Track::cellNum() const
 int CellTrack::Track::trackId() const
 {
 	return m_track_id;
+}
+int CellTrack::Track::startTime() const
+{
+	return m_start_time;
 }

@@ -16,6 +16,7 @@ public:
     FineTuningDialog(QWidget *parent = 0);
     ~FineTuningDialog();
 	void setParameters(ComponentTree* tree, int label);
+	int getLabel() const;
 public slots:
 	///@brief threshold function used to get threshold result under certen threshold value
 	///@param v the threshold value

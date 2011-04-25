@@ -30,6 +30,11 @@ FineTuningDialog::~FineTuningDialog()
 }
 
 /// becareful set m_colors
+int FineTuningDialog::getLabel() const
+{
+	return m_mainLabel;
+}
+
 void FineTuningDialog::setParameters(ComponentTree* tree, int label)
 {
 	assert(tree != NULL);
@@ -164,9 +169,9 @@ void FineTuningDialog::updateInfoWidget()
 	int h = m_tree->height();
 	int d = m_tree->depth();
 	
-	ui->minEditor->setText(tr("%1").arg(m_tree->width()));
-	ui->maxEditor->setText(tr("%1").arg(m_tree->height()));
-	ui->singleEditor->setText(tr("%1").arg(m_tree->depth()));
+	ui->minEditor->setText(tr("%1").arg(m_tree->getMinThresh()));
+	ui->maxEditor->setText(tr("%1").arg(m_tree->getMaxThresh()));
+	ui->singleEditor->setText(tr("%1").arg(m_tree->getSingleThresh()));
 
 	ui->widthLabel2->setText(tr("%1").arg(w));
 	ui->heightLabel2->setText(tr("%1").arg(h));
@@ -187,10 +192,14 @@ void FineTuningDialog::onChoose()
 	if(m_tree == NULL) return;
 	int cellnum = m_labels.size();
 	vector<int> labels;
-	int i = 0;
-	for(; i < cellnum; i++)
+	if(cellnum == 1) labels = m_labels;
+	else
 	{
-		if(m_checkers[i]->isChecked()) labels.push_back(m_labels[i]);
+		int i = 0;
+		for(; i < cellnum; i++)
+		{
+			if(m_checkers[i]->isChecked()) labels.push_back(m_labels[i]);
+		}
 	}
 	if(labels.empty())
 	{

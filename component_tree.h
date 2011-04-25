@@ -106,6 +106,9 @@ class ComponentTree
 		int width() const;
 		int height() const;
 		int depth() const;
+		int getMinThresh() const;
+		int getMaxThresh() const;
+		int getSingleThresh() const;
 		Node* root() const;
 		Node* getNode(int label) const;  //node of label 
 		Node* getNode(vector<int> points) const;  //node of points

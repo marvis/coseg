@@ -109,12 +109,10 @@ void AT3DVIEW::onOpen()
 //File Group
 void AT3DVIEW::onLoadResult()
 {
-
 }
 
 void AT3DVIEW::onSaveFrames()
 {
-
 }
 //Edit Group
 void AT3DVIEW::onApplyFilter()
@@ -135,7 +133,56 @@ void AT3DVIEW::onSummary()
 
 void AT3DVIEW::onSpeed()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0 )	return;
+	int track_num = celltrack->trackNum();
+	int frame_num = celltrack->frameNum();
 
+	int rows = celltrack->trackNum();
+	int columns = celltrack->frameNum() +  1 ;
+
+	QTableWidget* tableWidget = new QTableWidget(rows, columns, NULL);
+	QTableWidgetItem *item;
+	QStringList strList;
+	QString str;
+	str = QObject::tr("trackId");
+	strList<<str;
+	for(int column = 1; column < frame_num; column++)
+	{
+		str = QObject::tr("%1->%2").arg(column).arg(column+1);
+		strList<<str;
+	}
+	strList<<"meanSpeed";
+	tableWidget->setHorizontalHeaderLabels(strList);
+	
+	
+	for(int row = 0 ; row < rows; row++)
+	{
+		int frame_id = 0;
+		item = new QTableWidgetItem(QObject::tr("%1").arg(row+1,(int)log10(track_num)+1,10,QChar('0')));
+		tableWidget->setItem(row, 0 ,item);
+		CellTrack::Track* track = celltrack->getTrack(row);
+		float sum_distance = 0.0;
+		float cx1, cy1, cz1;
+		float cx2, cy2, cz2;
+		CellTrack::Cell* cell = track->getStartCell();
+		cell->getCenter(cx1,cy1,cz1);
+		for(frame_id = track->startTime() + 1; frame_id < frame_num; frame_id++)
+		{
+			cell = cell->getNextCell();
+			if(cell == NULL) break;
+			cell->getCenter(cx2,cy2,cz2);
+			float distance = sqrt((cx2 - cx1)*(cx2 - cx1) + (cy2 - cy1)*(cy2 - cy1) + (cz2 - cz1)*(cz2 - cz1));
+			sum_distance += distance;
+			item = new QTableWidgetItem(QObject::tr("%1").arg(distance,4,'f',2,QChar('0')));
+			tableWidget->setItem(row,frame_id +1,item);
+		}
+		item = new QTableWidgetItem(QObject::tr("%1").arg(sum_distance/(frame_id - track->startTime()-1),4,'f',2,QChar('0')));
+		tableWidget->setItem(row,frame_num,item);
+	}
+	tableWidget->show();
+	tableWidget->setWindowTitle("Speed");
+	tableWidget->setSortingEnabled(true);
+	tableWidget->sortByColumn(0,Qt::AscendingOrder);
 }
 
 void AT3DVIEW::onVolume()
@@ -144,7 +191,6 @@ void AT3DVIEW::onVolume()
 
 void AT3DVIEW::onDeformation()
 {
-	
 }
 
 //View Group
@@ -164,6 +210,7 @@ void AT3DVIEW::onViewTree()
 //Control Group
 void AT3DVIEW::onFirst()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0 )	return;
 	setFirst();
 	ui.glGroupBox->setTitle(tr("Time : %1").arg(current_time + 1));
 	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
@@ -173,6 +220,7 @@ void AT3DVIEW::onFirst()
 
 void AT3DVIEW::onLast()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0) return;
 	setLast();
 	ui.glGroupBox->setTitle(tr("Time : %1").arg(current_time + 1));
 	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
@@ -182,6 +230,7 @@ void AT3DVIEW::onLast()
 
 void AT3DVIEW::onPrevious()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0) return;
 	setPrev();
 	ui.glGroupBox->setTitle(tr("Time : %1").arg(current_time + 1));
 	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
@@ -191,6 +240,7 @@ void AT3DVIEW::onPrevious()
 
 void AT3DVIEW::onNext()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0) return;
 	setNext();
 	ui.glGroupBox->setTitle(tr("Time : %1").arg(current_time + 1));
 	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
@@ -201,10 +251,21 @@ void AT3DVIEW::onNext()
 //Cell Widget
 void AT3DVIEW::onReverse()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0) return;
+	  map<CellTrack::Track*, bool>::iterator it = tracks_state.begin();
+	  while(it != tracks_state.end())
+	  {
+		  (*it).second = 1 - (*it).second;
+		  it++;
+	  }
+	  m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
+	  m_glWidget->updateGL();
+	  m_cellWidget->setCells(celltrack->getFrame(current_time)->getCells(), this->getMarkedCells());
 }
 
 void AT3DVIEW::onUndo()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0) return;
 	if(history.empty()) return;
 	undo();
 	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
@@ -216,6 +277,7 @@ void AT3DVIEW::onUndo()
  ************************************************/
 void AT3DVIEW::onChoose()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0) return;
 	choose();
 	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
 	m_glWidget->updateGL();
@@ -224,20 +286,12 @@ void AT3DVIEW::onChoose()
 
 void AT3DVIEW::onDelete()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0) return;
 	remove();
 	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
 	m_glWidget->updateGL();
 	m_cellWidget->setCells(celltrack->getFrame(current_time)->getCells(), this->getMarkedCells());
 }
-
-void AT3DVIEW::onNearestCellChoosed(int id)
-{
-}
-
-void AT3DVIEW::onCheckBoxChanged()
-{
-}
-
 
 /************************************************
  * SLot Functions End
@@ -251,6 +305,7 @@ void AT3DVIEW::onCheckBoxChanged()
 
 void AT3DVIEW::clear()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0) return;
 	while(!history.empty())
 	{
 		CellTrack* ct = history.back();
@@ -268,6 +323,7 @@ void AT3DVIEW::clear()
 // signal flow : glwidget -> cellwidget -> AT3DVIEW
 void AT3DVIEW::onCellMarked(float x, float y)
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0) return;
 	CellTrack::Cell* cell = this->getClickedCell(x,y,0.0);
 	if(!tracks_state[cell->getTrack()])
 	{
@@ -289,6 +345,7 @@ void AT3DVIEW::onCellMarked(CellTrack::Cell* cell)
 //	{
 //		setCellCenters();
 //	}
+	if(celltrack == NULL || celltrack->frameNum() == 0) return;
 	if(!tracks_state[cell->getTrack()])
 	{
 		this->markCell(cell);
@@ -305,6 +362,7 @@ void AT3DVIEW::onCellMarked(CellTrack::Cell* cell)
 
 void AT3DVIEW::on_fineTuningButton_clicked()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0) return;
     vector<CellTrack::Cell*> cells = this->getMarkedCells();
     if(cells.size() != 1)
     {
@@ -319,5 +377,14 @@ void AT3DVIEW::on_fineTuningButton_clicked()
     FineTuningDialog* dlg = new FineTuningDialog();
     dlg->setModal(true);
     dlg->setParameters(tree, node_label);
-    dlg->exec();
+    if(dlg->exec() == QDialog::Accepted)
+	{
+	cell->setModNodeLabel(dlg->getLabel());
+	cell->setVertices();
+	cell->setCenterArea();
+
+	m_glWidget->loadTexture(this->getTexData(), this->getWidth(), this->getHeight(), this->getDepth(),3);
+	m_glWidget->updateGL();
+	m_cellWidget->setCells(celltrack->getFrame(current_time)->getCells(), this->getMarkedCells());
+	}
 }

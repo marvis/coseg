@@ -1069,6 +1069,21 @@ int ComponentTree::depth() const
 	return m_depth;
 }
 
+int ComponentTree::getMinThresh() const
+{
+	return this->m_minSize;
+}
+
+int ComponentTree::getMaxThresh() const
+{
+	return this->m_maxSize;
+}
+
+int ComponentTree::getSingleThresh() const
+{
+	return this->m_singleSize;
+}
+
 ComponentTree::Node* ComponentTree::root() const
 {
 	return m_root;

@@ -86,13 +86,9 @@ private slots:
 	
 	void onDelete();
 	
-	void onCheckBoxChanged();
-	
 	/************************
 	 * GLWidget
 	 ************************/
-	void onNearestCellChoosed(int);
-
 	void onCellMarked(float x, float y);
 	void onCellMarked(CellTrack::Cell*);
 	 
