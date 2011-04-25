@@ -25,11 +25,13 @@ HEADERS += widgets/glwidget.h \
     dialogs/createdialog.h \
     dialogs/filterdialog.h \
     extends/cell_track_ex.h \
-    dialogs/finetuningdialog.h
+    dialogs/finetuningdialog.h \
+    widgets/tablewidget.h
 FORMS += widgets/at3d_view.ui \
     dialogs/createdialog.ui \
     dialogs/finetuningdialog.ui \
-    dialogs/filterdialog.ui 
+    dialogs/filterdialog.ui \
+    widgets/tablewidget.ui
 SOURCES += widgets/glwidget.cpp \
     widgets/cellwidget.cpp \
     ../myalgorithms.cpp \
@@ -42,4 +44,5 @@ SOURCES += widgets/glwidget.cpp \
     dialogs/createdialog.cpp \
     dialogs/filterdialog.cpp \
     extends/cell_track_ex.cpp \
-    dialogs/finetuningdialog.cpp
+    dialogs/finetuningdialog.cpp \
+    widgets/tablewidget.cpp

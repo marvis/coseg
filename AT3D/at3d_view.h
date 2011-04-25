@@ -4,11 +4,12 @@
 #include <QtGui>
 #include <vector>
 #include <stack>
+
 #include "widgets/glwidget.h"
 #include "widgets/cellwidget.h"
-#include "dialogs/finetuningdialog.h"
 #include "../CT3D/cell_track_controller.h"
 #include "../component_tree.h"
+#include "../myalgorithms.h"
 #include "ui_at3d_view.h"
 //#include "./ui/filterDlg.h"
 using namespace std;

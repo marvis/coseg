@@ -6,12 +6,12 @@
 #include <stack>
 #include <cassert>
 
-#include "at3d_view.h"
-#include "../CT3D/cell_track_controller.h"
-#include "../myalgorithms.h"
-#include "../component_tree.h"
+#include "widgets/tablewidget.h"
+#include "dialogs/finetuningdialog.h"
 #include "dialogs/createdialog.h"
 #include "extends/cell_track_ex.h"
+
+#include "at3d_view.h"
 using namespace std;
 
 /************************************
@@ -138,17 +138,22 @@ void AT3DVIEW::onSpeed()
 	int frame_num = celltrack->frameNum();
 
 	int rows = celltrack->trackNum();
-	int columns = celltrack->frameNum() +  1 ;
+	int columns = celltrack->frameNum() +  2 ;
+	
+	TableWidget* twidget = new TableWidget();
+	twidget->show();
+	QTableWidget* tableWidget = twidget->getTableWidget() ;//= new QTableWidget(rows, columns, NULL);
+	tableWidget->setRowCount(rows);
+	tableWidget->setColumnCount(columns);
 
-	QTableWidget* tableWidget = new QTableWidget(rows, columns, NULL);
 	QTableWidgetItem *item;
 	QStringList strList;
 	QString str;
 	str = QObject::tr("trackId");
 	strList<<str;
-	for(int column = 1; column < frame_num; column++)
+	for(int column = 1; column <= frame_num; column++)
 	{
-		str = QObject::tr("%1->%2").arg(column).arg(column+1);
+		str = QObject::tr("->%1").arg(column);
 		strList<<str;
 	}
 	strList<<"meanSpeed";
@@ -162,12 +167,18 @@ void AT3DVIEW::onSpeed()
 		tableWidget->setItem(row, 0 ,item);
 		CellTrack::Track* track = celltrack->getTrack(row);
 		float sum_distance = 0.0;
-		float cx1, cy1, cz1;
-		float cx2, cy2, cz2;
+		float cx1 = 0.0 , cy1 = 0.0 , cz1 = 0.0;
+		float cx2 = 0.0 , cy2 = 0.0 , cz2 = 0.0;
 		CellTrack::Cell* cell = track->getStartCell();
 		cell->getCenter(cx1,cy1,cz1);
-		for(frame_id = track->startTime() + 1; frame_id < frame_num; frame_id++)
+		for(frame_id = track->startTime(); frame_id < frame_num; frame_id++)
 		{
+			if(frame_id == track->startTime())
+			{
+				item = new QTableWidgetItem(QObject::tr("%1").arg(0.0f,4,'f',2,QChar('0')));
+				tableWidget->setItem(row,frame_id +1,item);
+				continue;
+			}
 			cell = cell->getNextCell();
 			if(cell == NULL) break;
 			cell->getCenter(cx2,cy2,cz2);
@@ -177,12 +188,13 @@ void AT3DVIEW::onSpeed()
 			tableWidget->setItem(row,frame_id +1,item);
 		}
 		item = new QTableWidgetItem(QObject::tr("%1").arg(sum_distance/(frame_id - track->startTime()-1),4,'f',2,QChar('0')));
-		tableWidget->setItem(row,frame_num,item);
+		tableWidget->setItem(row,frame_num+1,item);
 	}
-	tableWidget->show();
 	tableWidget->setWindowTitle("Speed");
 	tableWidget->setSortingEnabled(true);
 	tableWidget->sortByColumn(0,Qt::AscendingOrder);
+	//tableWidget->show();
+
 }
 
 void AT3DVIEW::onVolume()
