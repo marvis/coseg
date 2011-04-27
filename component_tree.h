@@ -112,6 +112,7 @@ class ComponentTree
 		Node* root() const;
 		Node* getNode(int label) const;  //node of label 
 		Node* getNode(vector<int> points) const;  //node of points
+		Pixel* getPixel(int pos);
 
 		Paths getPaths() const;
 

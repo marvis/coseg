@@ -3,8 +3,8 @@ CXX = g++ -g -Wall
 
 CXXFLAGS = -ltiff
 
-OBJ_COSEG_TWO = ../../myalgorithms.o ../../component_tree.o ../../CT3D/cell_track.o ../../CT3D/palette.o coseg_two.o
-OBJ_COSEG_MORE = ../../myalgorithms.o ../../component_tree.o ../../CT3D/cell_track.o ../../CT3D/palette.o coseg_more.o
+OBJ_COSEG_TWO = ../../myalgorithms.o ../../component_tree.o ../../CT3D/cell_track.o ../../CT3D/palette.o ../../CT3D/bipartite.o coseg_two.o
+OBJ_COSEG_MORE = ../../myalgorithms.o ../../component_tree.o ../../CT3D/cell_track.o ../../CT3D/palette.o ../../CT3D/bipartite.o coseg_more.o
 
 all: coseg_more coseg_two
 

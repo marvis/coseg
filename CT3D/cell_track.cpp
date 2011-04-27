@@ -11,6 +11,7 @@
 #include "palette.h"
 #include "../component_tree.h"
 #include "../myalgorithms.h"
+#include "bipartite.h"
 
 #include <iostream>
 #include <string>
@@ -49,12 +50,18 @@ vector<char*> vec_chars(vector<string> & strings)
  **************************************************************************/
 CellTrack::CellTrack()
 {
+	m_method = 0;
 }
 
 CellTrack::~CellTrack()
 {
 	this->releaseFrames();
 	this->releaseTracks();
+}
+
+void CellTrack::setMethod(int method)
+{
+	m_method = method;
 }
 
 bool CellTrack::save(char* track_file)
@@ -468,10 +475,9 @@ void CellTrack::releaseAllCells()
 	===========================================*/
 }
 
-bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2,vector<CellTrack::Frame*> &frames/*, int method*/)
+bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2,vector<CellTrack::Frame*> &frames)
 {
-	int method = 0;
-	if(method == 0) // ILP programming
+	if(m_method == 0) // ILP programming
 	{
 		assert(frames.empty());
 
@@ -607,7 +613,7 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 
 		return true;
 	}
-	else if(method == 1)  // three point condition
+	else if(m_method == 1)  // three point condition
 	{/*
 		assert(frames.empty());
 		if(tree1->width() != tree2->width() || tree1->height() != tree2->height() || tree1->depth() != tree2->depth())
@@ -786,6 +792,38 @@ ComponentTree* CellTrack::Cell::getTree() const
 void CellTrack::Cell::setTree(ComponentTree* tree)
 {
 	m_tree = tree;
+}
+
+int CellTrack::Cell::getOverlap(CellTrack::Cell* cell2)
+{
+	vector<int>& vertices1 = this->getVertices();
+	vector<int>& vertices2 = cell2->getVertices();
+	int count = 0;
+	if(vertices1.size() > vertices2.size())
+	{
+		set<int> vertices_set(vertices1.begin(), vertices1.end());
+		vector<int>& vertices = vertices2;
+		for(int i = 0; i < vertices.size(); i++)
+		{
+			if(vertices_set.find(vertices[i]) != vertices_set.end())
+			{
+				count++;
+			}
+		}
+	}
+	else
+	{
+		set<int> vertices_set(vertices2.begin(), vertices2.end());
+		vector<int>& vertices = vertices1;
+		for(int i = 0; i < vertices.size(); i++)
+		{
+			if(vertices_set.find(vertices[i]) != vertices_set.end())
+			{
+				count++;
+			}
+		}
+	}
+	return count;
 }
 
 /**
@@ -1134,7 +1172,12 @@ void CellTrack::Frame::exportImage(char* img_file/*, Palette& palette*/)
 	{
 		//(*it)->setTree(tree); // not needed maybe
 		vector<int>& vertices = (*it)->getVertices();
-		assert(!vertices.empty());
+		if(vertices.empty()) 
+		{
+			it++;
+			continue;
+		}
+		//assert(!vertices.empty());
 		//int color_id = (*it)->getTrack()->getColorId();
 		//unsigned char r = palette(color_id).r; //rand() % 256;
 		//unsigned char g = palette(color_id).g; //rand() % 256;
@@ -1210,7 +1253,96 @@ map<unsigned int, CellTrack::Cell*> CellTrack::Frame::createFromImage(char* img_
 	return map_cell;
 }
 
+void CellTrack::Frame::bipartiteMatching(CellTrack::Frame* frame2, vector<int>& ids1, vector<int>& ids2)
+{
+	if(frame2 == NULL) return;
+	Frame* frame1 = this;
+	int size = this->width() * this->height() * this->depth();
+	vector<int> matrix1(size, -1);
+	vector<int> matrix2(size, -1);
+	vector<Cell*>& cells1 = frame1->m_cells;
+;
+	vector<Cell*>& cells2 = frame2->m_cells;
+	vector<Cell*>::iterator it = cells1.begin();
+	int id = 0;
+	while(it != cells1.end())
+	{
+		vector<int>& vertices = (*it)->getVertices();
+        vector<int>::iterator itr = vertices.begin();
+        while(itr != vertices.end())
+        {
+            matrix1[*itr] = id;
+            itr++;
+        }
+		id++;
+		it++;
+	}
+	it = cells2.begin();
+	id = 0;
+	while(it != cells2.end())
+	{
+		vector<int> vertices = (*it)->getVertices();
+        vector<int>::iterator itr = vertices.begin();
+        while(itr != vertices.end())
+        {
+            matrix2[*itr] = id;
+            itr++;
+        }
+		id++;
+		it++;
+	}
+	int cells1Num = cells1.size();
+	int cells2Num = cells2.size();
+	vector<float> weights(cells1Num*cells2Num, 0.0);
+	for(int i = 0; i < size; i++)
+	{
+		int id1 = matrix1[i];
+		int id2 = matrix2[i];
+		// if overlab then set true
+		if(id1 != -1 && id2 != -1) weights[id1*cells2Num + id2] += 1.0;
+	}
+
+	bipartite_matching(weights, cells1Num, cells2Num, ids1, ids2);
+}
+
 void CellTrack::Frame::mergePrevFrame(CellTrack::Frame* prev_frame)
+{
+	if(prev_frame == NULL) return;   // very important
+	vector<int> ids1;
+	vector<int> ids2;
+	//prev_frame->bipartiteMatching(this, ids1, ids2);
+	this->bipartiteMatching(prev_frame, ids2, ids1);
+	map<int,int> rev_ids1;//
+	for(int i = 0; i < ids1.size(); i++)
+	{
+		int id = ids1[i];
+		rev_ids1[id] = i;
+	}
+	vector<Cell*>& cells1 = prev_frame->m_cells;
+	vector<Cell*>& cells2 = this->m_cells;
+	int cells1Num = prev_frame->cellNum();
+	for(int id1 = 0; id1 < cells1Num; id1++)
+	{
+		if(rev_ids1.find(id1) != rev_ids1.end())
+		{
+			int id2 = ids2[rev_ids1[id1]];
+			cells2[id2]->setFirNodeLabel(cells1[id1]->getCurNodeLabel());
+			cells2[id2]->setSecNodeLabel(cells1[id1]->getCurNodeLabel());
+				int cur_label = cells1[id1]->m_cur_node_label > cells2[id2]->m_cur_node_label ? cells1[id1]->m_cur_node_label:  cells2[id2]->m_cur_node_label;
+				Cell* prev_cell = cells1[id1]->getPrevCell();
+				cells2[id2]->setPrevCell(prev_cell);
+				prev_cell->setNextCell(cells2[id2]);
+				delete cells1[id1];
+		}
+		else
+		{
+			m_cells.push_back(cells1[id1]);
+		}
+	}
+	delete prev_frame;
+}
+
+void CellTrack::Frame::mergePrevFrame_OLD(CellTrack::Frame* prev_frame)
 {
 	if(prev_frame == NULL) return;
 	assert(prev_frame->getTree() == this->getTree());
@@ -1226,7 +1358,7 @@ void CellTrack::Frame::mergePrevFrame(CellTrack::Frame* prev_frame)
 	while(it != cells1.end())
 	{
 		//(*it)->setTree(tree); // not needed maybe
-		vector<int> vertices = (*it)->getVertices();
+		vector<int>& vertices = (*it)->getVertices();
         vector<int>::iterator itr = vertices.begin();
         while(itr != vertices.end())
         {

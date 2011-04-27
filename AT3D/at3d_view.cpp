@@ -199,10 +199,117 @@ void AT3DVIEW::onSpeed()
 
 void AT3DVIEW::onVolume()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0 )	return;
+	int track_num = celltrack->trackNum();
+	int frame_num = celltrack->frameNum();
+
+	int rows = celltrack->trackNum();
+	int columns = celltrack->frameNum() +  2 ;
+	
+	TableWidget* twidget = new TableWidget();
+	twidget->show();
+	QTableWidget* tableWidget = twidget->getTableWidget() ;//= new QTableWidget(rows, columns, NULL);
+	tableWidget->setRowCount(rows);
+	tableWidget->setColumnCount(columns);
+
+	QTableWidgetItem *item;
+	QStringList strList;
+	QString str;
+	str = QObject::tr("trackId");
+	strList<<str;
+	for(int column = 1; column <= frame_num; column++)
+	{
+		str = QObject::tr("%1").arg(column);
+		strList<<str;
+	}
+	strList<<"meanVolume";
+	tableWidget->setHorizontalHeaderLabels(strList);
+	
+	
+	for(int row = 0 ; row < rows; row++)
+	{
+		int frame_id = 0;
+		item = new QTableWidgetItem(QObject::tr("%1").arg(row+1,(int)log10(track_num)+1,10,QChar('0')));
+		tableWidget->setItem(row, 0 ,item);
+		CellTrack::Track* track = celltrack->getTrack(row);
+		CellTrack::Cell* cell = track->getStartCell();
+		float volume_sum = 0;
+		for(frame_id = track->startTime(); frame_id < frame_num; frame_id++)
+		{
+			if(cell == NULL) break;
+			volume_sum += cell->getVolume();
+			item = new QTableWidgetItem(QObject::tr("%1").arg(cell->getVolume(),4,'f',2,QChar('0')));
+			tableWidget->setItem(row,frame_id +1,item);
+			cell = cell->getNextCell();
+		}
+		item = new QTableWidgetItem(QObject::tr("%1").arg(volume_sum/(frame_id - track->startTime()),4,'f',2,QChar('0')));
+		tableWidget->setItem(row,frame_num+1,item);
+	}
+	tableWidget->setWindowTitle("Volume");
+	tableWidget->setSortingEnabled(true);
+	tableWidget->sortByColumn(0,Qt::AscendingOrder);
+	
 }
 
 void AT3DVIEW::onDeformation()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0 )	return;
+	int track_num = celltrack->trackNum();
+	int frame_num = celltrack->frameNum();
+
+	int rows = celltrack->trackNum();
+	int columns = celltrack->frameNum() +  2 ;
+	
+	TableWidget* twidget = new TableWidget();
+	twidget->show();
+	QTableWidget* tableWidget = twidget->getTableWidget() ;//= new QTableWidget(rows, columns, NULL);
+	tableWidget->setRowCount(rows);
+	tableWidget->setColumnCount(columns);
+
+	QTableWidgetItem *item;
+	QStringList strList;
+	QString str;
+	str = QObject::tr("trackId");
+	strList<<str;
+	for(int column = 1; column <= frame_num; column++)
+	{
+		str = QObject::tr("->%1").arg(column);
+		strList<<str;
+	}
+	strList<<"meanDeform";
+	tableWidget->setHorizontalHeaderLabels(strList);
+	
+	
+	for(int row = 0 ; row < rows; row++)
+	{
+		int frame_id = 0;
+		item = new QTableWidgetItem(QObject::tr("%1").arg(row+1,(int)log10(track_num)+1,10,QChar('0')));
+		tableWidget->setItem(row, 0 ,item);
+		CellTrack::Track* track = celltrack->getTrack(row);
+		float accum_deform = 1.0;
+		float deform = 1.0;
+		CellTrack::Cell* prev_cell = track->getStartCell();
+		item = new QTableWidgetItem(QObject::tr("%1").arg(1.0f,4,'f',2,QChar('0')));
+		tableWidget->setItem(row,track->startTime() +1,item);
+		for(frame_id = track->startTime() + 1; frame_id < frame_num; frame_id++)
+		{
+			CellTrack::Cell* next_cell = prev_cell->getNextCell();
+			if(next_cell == NULL) break;
+			int overlap = prev_cell->getOverlap(next_cell);
+			deform = next_cell->getSize() - overlap;
+			deform /= prev_cell->getSize();// + next_cell->getSize() - overlap;
+			accum_deform *= deform;
+			item = new QTableWidgetItem(QObject::tr("%1").arg(deform,4,'f',2,QChar('0')));
+			tableWidget->setItem(row,frame_id +1,item);
+			prev_cell = next_cell;
+		}
+		item = new QTableWidgetItem(QObject::tr("%1").arg(pow((double)accum_deform,(double)(1.0/(frame_id - track->startTime()-1))),4,'f',2,QChar('0')));
+		tableWidget->setItem(row,frame_num+1,item);
+	}
+	tableWidget->setWindowTitle("Deformation");
+	tableWidget->setSortingEnabled(true);
+	tableWidget->sortByColumn(0,Qt::AscendingOrder);
+	
 }
 
 //View Group

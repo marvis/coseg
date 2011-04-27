@@ -46,6 +46,7 @@ class CellTrack
 			ComponentTree* getTree() const;
 			void setTree(ComponentTree* tree);
 			//float meanHeight() const;
+			int getOverlap(Cell* cell2);
 			void draw(unsigned char* image);
 			void drawMarker(unsigned char* image);
 
@@ -110,7 +111,9 @@ class CellTrack
 			void addCell(Cell* cell);
 			map<unsigned int, Cell*> createFromImage(char* img_file, map<unsigned int, Cell*> &prev_map_cell);
 
+			void bipartiteMatching(Frame* frame2, vector<int> &ids1, vector<int>&ids2);  // do bipartite matching with frame2
 			void mergePrevFrame(Frame* prev_frame); // todo: consider NULL, free prev_frame
+			void mergePrevFrame_OLD(Frame* prev_frame); // todo: consider NULL, free prev_frame
 			//vector<int> getReverseAlphaMapping(); // used in mergePrevFrame
 			//void linkPrevFrame(Frame* frame);  //  used when loading image files
 
@@ -168,6 +171,7 @@ class CellTrack
 	public:
 	CellTrack();
 	virtual	~CellTrack();
+	void setMethod(int method);
 	bool save(char* track_file);
 	bool save(ofstream& ofs, bool saveType);
 	bool load(char* track_file);              // todo: check beforehand
@@ -216,6 +220,7 @@ class CellTrack
 	//int m_numTracks;
 	Frames m_frames; // Frames = vector<Frame*>
 	Tracks m_tracks; // Tracks = vector<Track*>
+	int m_method; // 0 for original, 1 for three point, 2 ...
 	//vector<char*> m_tree_files;
 	//vector<char*> m_img_files;
 };

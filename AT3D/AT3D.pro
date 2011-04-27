@@ -22,6 +22,7 @@ HEADERS += widgets/glwidget.h \
     ../CT3D/cell_track_controller.h \
     ../CT3D/cell_track.h \
     ../CT3D/palette.h \
+	../CT3D/bipartite.h \
     dialogs/createdialog.h \
     dialogs/filterdialog.h \
     extends/cell_track_ex.h \
@@ -41,6 +42,7 @@ SOURCES += widgets/glwidget.cpp \
     ../CT3D/cell_track_controller.cpp \
     ../CT3D/cell_track.cpp \
     ../CT3D/palette.cpp \
+	../CT3D/bipartite.cpp \
     dialogs/createdialog.cpp \
     dialogs/filterdialog.cpp \
     extends/cell_track_ex.cpp \

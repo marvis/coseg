@@ -1135,6 +1135,11 @@ ComponentTree::Node* ComponentTree::getNode(vector<int> points) const
 	return root_node;
 }
 
+ComponentTree::Pixel* ComponentTree::getPixel(int pos)
+{
+	return &m_pixels[pos];
+}
+
 ComponentTree::Paths ComponentTree::getPaths() const
 {
 	vector<vector<int> > paths;
