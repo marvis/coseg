@@ -10,7 +10,6 @@ QT += opengl
 CONFIG += qt \
     debug
 LIBS += -ltiff \
-    -lGLEW \
     -llpsolve55
 
 # Input

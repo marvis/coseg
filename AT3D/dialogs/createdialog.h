@@ -7,14 +7,14 @@
 #include <QStringList>
 
 namespace Ui {
-    class CreateDialog;
+    class CreateCellTrackDialog;
 }
 
-class CreateDialog : public QDialog {
+class CreateCellTrackDialog : public QDialog {
     Q_OBJECT
 public:
-    CreateDialog(QWidget *parent = 0);
-    ~CreateDialog();
+    CreateCellTrackDialog(QWidget *parent = 0);
+    ~CreateCellTrackDialog();
     bool checkValid();
 	void setCellTrack(CellTrack* cell_track);
 	CellTrack* getCellTrack();
@@ -28,7 +28,7 @@ protected:
     void changeEvent(QEvent *e);
 
 private:
-    Ui::CreateDialog *ui;
+    Ui::CreateCellTrackDialog *ui;
     QStringList m_filelist;
 	CellTrack* m_celltrack;
 signals:

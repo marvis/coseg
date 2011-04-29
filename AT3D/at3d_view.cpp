@@ -83,7 +83,7 @@ CellTrack::Cell* AT3DVIEW::getClickedCell(float posX, float posY, float posZ)
 
 void AT3DVIEW::onOpen()
 {
-	CreateDialog* createdlg = new CreateDialog();
+	CreateCellTrackDialog* createdlg = new CreateCellTrackDialog();
 	CellTrackEX* cell_track_ex = new CellTrackEX();
 	createdlg->setCellTrack(cell_track_ex);
 	createdlg->setModal(true);

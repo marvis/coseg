@@ -22,9 +22,9 @@ QString getFileName(QString str)
 	else return str;
 }
 
-CreateDialog::CreateDialog(QWidget *parent) :
+CreateCellTrackDialog::CreateCellTrackDialog(QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::CreateDialog)
+    ui(new Ui::CreateCellTrackDialog)
 {
     ui->setupUi(this);
 	ui->progressBar->setHidden(true);
@@ -36,43 +36,43 @@ CreateDialog::CreateDialog(QWidget *parent) :
 	m_celltrack = NULL;
 }
 
-CreateDialog::~CreateDialog()
+CreateCellTrackDialog::~CreateCellTrackDialog()
 {
     delete ui;
 }
-void CreateDialog::setCellTrack(CellTrack* celltrack)
+void CreateCellTrackDialog::setCellTrack(CellTrack* celltrack)
 {
 	m_celltrack = celltrack;
 	connect((CellTrackEX*)celltrack, SIGNAL(setProgressValue(int)), this, SLOT(onSetProgressValue(int)));
 }
 
-CellTrack* CreateDialog::getCellTrack()
+CellTrack* CreateCellTrackDialog::getCellTrack()
 {
 	return m_celltrack;
 }
-int CreateDialog::getMinThresh()
+int CreateCellTrackDialog::getMinThresh()
 {
     return atoi((char*) ui->minEditor->text().toStdString().c_str());
 }
 
-int CreateDialog::getMaxThresh()
+int CreateCellTrackDialog::getMaxThresh()
 {
     return atoi((char*) ui->maxEditor->text().toStdString().c_str());
 
 }
 
-int CreateDialog::getSingleThresh()
+int CreateCellTrackDialog::getSingleThresh()
 {
     return atoi((char*) ui->singleEditor->text().toStdString().c_str());
 
 }
 
-QStringList CreateDialog::getFileList()
+QStringList CreateCellTrackDialog::getFileList()
 {
     return m_filelist;
 }
 
-bool CreateDialog::checkValid()
+bool CreateCellTrackDialog::checkValid()
 {
    if(ui->fromImagesButton->isChecked())
     {
@@ -84,12 +84,12 @@ bool CreateDialog::checkValid()
     return !m_filelist.empty();
 }
 
-bool CreateDialog::isFromTrees()
+bool CreateCellTrackDialog::isFromTrees()
 {
     return ui->fromTreesButton->isChecked();
 }
 
-void CreateDialog::changeEvent(QEvent *e)
+void CreateCellTrackDialog::changeEvent(QEvent *e)
 {
     QDialog::changeEvent(e);
     switch (e->type()) {
@@ -101,23 +101,23 @@ void CreateDialog::changeEvent(QEvent *e)
     }
 }
 
-void CreateDialog::on_fromImagesButton_clicked(bool checked)
+void CreateCellTrackDialog::on_fromImagesButton_clicked(bool checked)
 {
         ui->parasGroupBox->setVisible(checked);
         ui->openFilesButton->setText(tr("Open Images"));
 }
 
-void CreateDialog::on_fromTreesButton_clicked(bool checked)
+void CreateCellTrackDialog::on_fromTreesButton_clicked(bool checked)
 {
     ui->parasGroupBox->setHidden(checked);
     ui->openFilesButton->setText(tr("Open Trees"));
 }
 
-void CreateDialog::setExportButton()
+void CreateCellTrackDialog::setExportButton()
 {
 	ui->exportButton->setVisible(true);
 }
-void CreateDialog::onSetProgressValue(int value)
+void CreateCellTrackDialog::onSetProgressValue(int value)
 {
 	ui->progressBar->setValue(value+1);
 	if(value < m_filelist.size())
@@ -143,7 +143,7 @@ void CreateDialog::onSetProgressValue(int value)
 }
 
 
-void CreateDialog::on_openFilesButton_clicked()
+void CreateCellTrackDialog::on_openFilesButton_clicked()
 {
 
     //QStringList filelist ;
@@ -188,7 +188,7 @@ void CreateDialog::on_openFilesButton_clicked()
 }
 
 
-void CreateDialog::accept()
+void CreateCellTrackDialog::accept()
 {
 	if(checkValid())
 	{ 
@@ -203,7 +203,7 @@ void CreateDialog::accept()
 		ui->startTrackingButton->click();
 }
 
-void CreateDialog::reject()
+void CreateCellTrackDialog::reject()
 {
 	if(checkValid() && m_celltrack != NULL)
 	{
@@ -215,7 +215,7 @@ void CreateDialog::reject()
 }
 
 
-void CreateDialog::on_exportButton_clicked()
+void CreateCellTrackDialog::on_exportButton_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
                                                      "",
@@ -223,7 +223,7 @@ void CreateDialog::on_exportButton_clicked()
     if(dir != tr("")) m_celltrack->exportImages((char*)"",(char*)dir.toStdString().c_str());
 }
 
-void CreateDialog::on_startTrackingButton_clicked()
+void CreateCellTrackDialog::on_startTrackingButton_clicked()
 {
     if(checkValid())
     {

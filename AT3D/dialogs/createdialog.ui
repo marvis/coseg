@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>CreateDialog</class>
- <widget class="QDialog" name="CreateDialog">
+ <class>CreateCellTrackDialog</class>
+ <widget class="QDialog" name="CreateCellTrackDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -236,7 +236,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>CreateDialog</receiver>
+   <receiver>CreateCellTrackDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -252,7 +252,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>CreateDialog</receiver>
+   <receiver>CreateCellTrackDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

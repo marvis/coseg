@@ -50,6 +50,8 @@ using namespace std;
 #ifndef NN
 #define NN 200
 #endif
+
+#define ABS(a) ((a)<0 ? -(a) :a)
 // adjacency matrix (fill this up)
 int cap[NN][NN];
 
@@ -203,7 +205,7 @@ bool bipartite_matching(vector<float>& weights, int nrows, int ncols, vector<int
 	// ei - ej
 	b = numI + numJ + 2;
 	cost[a][b] = max_w;
-	cap[a][b] = abs(numI - numJ);
+	cap[a][b] = ABS(numI - numJ);
 	for(a = 1; a <= numI; a++)
 	{
 		cost[a][b] = max_w;
@@ -230,7 +232,7 @@ bool bipartite_matching(vector<float>& weights, int nrows, int ncols, vector<int
 //			{
 //				cout<<"fnet["<<a<<"]["<<b<<"] = "<<fnet[a][b]<<" fnet["<<b<<"]["<<a<<"] = "<<fnet[b][a]<<endl;
 //			}
-			if(abs(fnet[a][b] - fnet[b][a]) == 1) 
+			if(ABS(fnet[a][b] - fnet[b][a]) == 1) 
 			{
 				ids1.push_back(i);
 				ids2.push_back(j);
