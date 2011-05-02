@@ -475,6 +475,31 @@ void CellTrack::releaseAllCells()
 	===========================================*/
 }
 
+int max_item(vector<float> items)
+{
+	if(items.empty()) return -1;
+	int numItem = items.size();
+	float max_value = 0.0;
+	int  max_label = 0;
+	for(int i = 0; i < numItem; i++)
+	{
+		if(i == 0)
+		{
+			max_value = items[0];
+			max_label = 0;
+		}
+		else
+		{
+			if(items[i] > max_value)
+			{
+				max_value = items[i];
+				max_label = i;
+			}
+		}
+	}
+	return max_label;
+}
+
 bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2,vector<CellTrack::Frame*> &frames)
 {
 	if(m_method == 0) // ILP programming
@@ -493,6 +518,8 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 		int numVars1 = (int)tree1->nodeNum();
 		int numVars2 = (int)tree2->nodeNum();
 		assert((int)weights.size() == numVars1 * numVars2);
+		// Forbid the assignment of root node
+		weights[numVars1*numVars2 - 1] = 0.0;
 		/*
 		   for(int i = 0; i < numVars1; i++)
 		   {
@@ -583,13 +610,14 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 		Frame* frame2 = new Frame();
 		frame1->setTree(tree1);
 		frame2->setTree(tree2);
-
+		
 		for(i = 0; i < numVars1; i++)
 		{
 			for(int j = 0; j < numVars2; j++)
 			{
 				if(fabs(row[i * numVars2 + j] - 1.0) < 0.1)
 				{
+					cout<<"("<<i<<","<<j<<") ";
 					Cell* cell1 = new Cell;
 					Cell* cell2 = new Cell;
 					cell1->setTree(tree1);
@@ -603,6 +631,7 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 				}
 			}
 		}
+		cout<<endl;
 
 		frames.push_back(frame1);
 		frames.push_back(frame2);
@@ -614,7 +643,7 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 		return true;
 	}
 	else if(m_method == 1)  // three point condition
-	{/*
+	{
 		assert(frames.empty());
 		if(tree1->width() != tree2->width() || tree1->height() != tree2->height() || tree1->depth() != tree2->depth())
 		{
@@ -628,28 +657,182 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 
 		vector<ComponentTree::Node*> nodes1 = tree1->root()->getPostOrderNodes();
 		vector<ComponentTree::Node*> nodes2 = tree2->root()->getPostOrderNodes();
-		map<ComponentTree::Node*, int> rev_nodes1;
-		map<ComponentTree::Node*, int> rev_nodes2;
-		for(int i = 0; i < nodes1.size(); i++) rev_nodes1[nodes1[i]] = i;
-		for(int i = 0; i < nodes2.size(); i++) rev_nodes2[nodes2[i]] = i;
 
 		int numVars1 = (int)tree1->nodeNum();
 		int numVars2 = (int)tree2->nodeNum();
-		vector<float> wvt(numVars1*numVars2, 0.0);
-		vector<float> wtv(numVars1*numVars2, 0.0);
-		vector<float> wtt(numVars1*numVars2, 0.0);
-		//calc wvt
+		vector<float> wvt(numVars1*numVars2, 0.0);  // weight of specific vertex -> subtree
+		vector<vector<int> > rev_wvt(numVars1*numVars2, vector<int>());
+		vector<float> wtv(numVars1*numVars2, 0.0); // weight of subtree -> specific vertex
+		vector<vector<int> > rev_wtv(numVars1*numVars2, vector<int>());
+		vector<float> wtt(numVars1*numVars2, 0.0); // weight of tree to tree
+		vector<vector<int> > rev_wtt(numVars1*numVars2, vector<int>());
+
+		//calc wvt, wvt[v][u] = max{wvv[v][u] , wvt[v][c1], wvt[v][c2], ...}
 		for(int i = 0; i < numVars1; i++)
 		{
 			ComponentTree::Node* node1 = nodes1[i];
+			int label1 = node1->getLabel();
 			for(int j = 0; j < numVars2; j++)
 			{
 				ComponentTree::Node* node2 = nodes2[j];
+				int label2 = node2->getLabel();
 				vector<ComponentTree::Node*> & childs = node2->getChilds(); 
-				
+				float max_weight = weights[label1 * numVars2 + label2];
+				int max_label = label2;
+				vector<ComponentTree::Node*>::iterator it = childs.begin();
+				while(it != childs.end())
+				{
+					int child_label = (*it)->getLabel();
+					float child_weight = wvt[label1 * numVars2 + child_label];
+					if(child_weight > max_weight)
+					{
+						max_weight = child_weight;
+						max_label = child_label;
+					}
+					it++;
+				}
+				wvt[label1*numVars2 + label2] = max_weight;
+				if(max_label < label2) rev_wvt[label1*numVars2 + label2] = rev_wvt[label1*numVars2 + max_label];
+				else 
+				{
+					vector<int> match;
+					match.push_back(label1);
+					match.push_back(label2);
+					rev_wvt[label1*numVars2 + label2] = match;
+				}
 			}
 		}
-		*/
+
+		//calc wtv, wtv[v][u] = max{wvv[v][u] , wtv[c1][u], wtv[c2][u], ...}
+		for(int j = 0; j < numVars2; j++)
+		{
+			ComponentTree::Node* node2 = nodes2[j];
+			int label2 = node2->getLabel();
+			for(int i = 0; i < numVars1; i++)
+			{
+				ComponentTree::Node* node1 = nodes1[i];
+				int label1 = node1->getLabel();
+				vector<ComponentTree::Node*> & childs = node1->getChilds(); 
+				float max_weight = weights[label1 * numVars2 + label2];
+				int max_label = label1;
+				vector<ComponentTree::Node*>::iterator it = childs.begin();
+				while(it != childs.end())
+				{
+					int child_label = (*it)->getLabel();
+					float child_weight = wtv[child_label * numVars2 + label2];
+					if(child_weight > max_weight)
+					{
+						max_weight = child_weight;
+						max_label = child_label;
+					}
+					it++;
+				}
+				wtv[label1*numVars2 + label2] = max_weight;
+				if(max_label < label1) rev_wtv[label1*numVars2 + label2] = rev_wtv[max_label*numVars2 + label2];
+				else 
+				{
+					vector<int> match;
+					match.push_back(label1);
+					match.push_back(label2);
+					rev_wvt[label1*numVars2 + label2] = match;
+				}
+			}
+		}
+
+		// calc wtt
+		// wtt[v][u] = max{wvt[v][u], wtv[v][u], bipartite maching between children of v and children of u}
+		for(int i = 0; i < numVars1; i++)
+		{
+			ComponentTree::Node* node1 = nodes1[i];
+			int label1 = node1->getLabel();
+			vector<ComponentTree::Node*>& childs1 = node1->getChilds();
+			int numChilds1 = childs1.size();
+			for(int j = 0; j < numVars2; j++)
+			{
+				ComponentTree::Node* node2 = nodes2[j];
+				int label2 = node2->getLabel();
+				vector<ComponentTree::Node*>& childs2 = node2->getChilds();
+				int numChilds2 = childs2.size(); 
+				if(numChilds1 == 0) 
+				{
+					wtt[label1 * numVars2 + label2] = wvt[label1 * numVars2 + label2];
+					rev_wtt[label1 * numVars2 + label2] = rev_wvt[label1 * numVars2 + label2];
+				}
+				else if(numChilds2 == 0)
+				{
+					wtt[label1 * numVars2 + label2] = wtv[label1 * numVars2 + label2];
+					rev_wtt[label1 * numVars2 + label2] = rev_wtv[label1 * numVars2 + label2];
+				}
+				else
+				{
+					vector<float> four_weights(4, 0.0);
+					vector<vector<int> > four_matches(4, vector<int>());
+					vector<int> uv_match;
+					four_weights[0] = weights[label1*numVars2 + label2];
+					uv_match.push_back(label1);
+					uv_match.push_back(label2);
+					four_matches[0] = uv_match;
+					
+					four_weights[1] = wvt[label1*numVars2 + label2];
+					four_matches[1] = rev_wvt[label1*numVars2 + label2];
+
+					four_weights[2] = wtv[label1*numVars2 + label2];
+					four_matches[2] = rev_wtv[label1*numVars2 + label2];
+					vector<float> children_weights(numChilds1 * numChilds2, 0.0);
+					for(int ii = 0; ii < numChilds1; ii++)
+					{
+						ComponentTree::Node* child1 = childs1[ii];
+						for(int jj = 0; jj < numChilds2;jj++)
+						{
+							ComponentTree::Node* child2 = childs2[jj];
+							children_weights[ii * numChilds2 + jj] = wtt[child1->getLabel() * numVars2 + child2->getLabel()];
+						}
+					}
+					vector<int> ids1, ids2;
+					vector<int> match;
+					four_weights[3] = bipartite_matching(children_weights, numChilds1, numChilds2, ids1, ids2);
+					for(int k = 0; k < (int)ids1.size(); k++)
+					{
+						vector<int> child_match = rev_wtt[ids1[k] * numVars2 + ids2[k]];
+						match.insert(match.end(), child_match.begin(), child_match.end());
+					}
+					four_matches[3] = match;
+					int which_item = max_item(four_weights);
+					wtt[label1*numVars2 + label2] = four_weights[which_item];
+					rev_wtt[label1*numVars2 + label2] = four_matches[which_item];
+				}
+			}
+		}
+		
+		Frame* frame1 = new Frame();
+		Frame* frame2 = new Frame();
+		frame1->setTree(tree1);
+		frame2->setTree(tree2);
+	
+		vector<int>& match = rev_wtt.back();
+		cout<<"match num : "<<match.size()<<endl;
+		assert(match.size() % 2 == 0);
+		int match_num = match.size() / 2;
+		for(int k = 0; k < match_num; k++)
+		{
+			int i = match[2*k];
+			int j = match[2*k + 1];
+			cout<<"("<<i<<","<<j<<") ";
+			Cell* cell1 = new Cell;
+			Cell* cell2 = new Cell;
+			cell1->setTree(tree1);
+			cell2->setTree(tree2);
+			cell1->setCurNodeLabel(i);
+			cell2->setCurNodeLabel(j);
+			cell1->setNextCell(cell2);
+			cell2->setPrevCell(cell1); 
+			frame1->addCell(cell1);
+			frame2->addCell(cell2);
+		}
+		cout<<endl;
+		frames.push_back(frame1);
+		frames.push_back(frame2);
+		return true;
 	}
 }
 
@@ -803,7 +986,7 @@ int CellTrack::Cell::getOverlap(CellTrack::Cell* cell2)
 	{
 		set<int> vertices_set(vertices1.begin(), vertices1.end());
 		vector<int>& vertices = vertices2;
-		for(int i = 0; i < vertices.size(); i++)
+		for(int i = 0; i < (int)vertices.size(); i++)
 		{
 			if(vertices_set.find(vertices[i]) != vertices_set.end())
 			{

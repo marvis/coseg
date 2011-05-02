@@ -129,6 +129,13 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QPushButton" name="trajectoryButton">
+           <property name="text">
+            <string>Trajectory</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
       </item>
@@ -327,7 +334,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>147</x>
-     <y>270</y>
+     <y>260</y>
     </hint>
     <hint type="destinationlabel">
      <x>10</x>
@@ -342,8 +349,8 @@
    <slot>onSummary()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>103</x>
-     <y>441</y>
+     <x>139</x>
+     <y>422</y>
     </hint>
     <hint type="destinationlabel">
      <x>9</x>
@@ -358,8 +365,8 @@
    <slot>onSpeed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>91</x>
-     <y>476</y>
+     <x>127</x>
+     <y>456</y>
     </hint>
     <hint type="destinationlabel">
      <x>8</x>
@@ -390,8 +397,8 @@
    <slot>onDeformation()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>111</x>
-     <y>546</y>
+     <x>147</x>
+     <y>524</y>
     </hint>
     <hint type="destinationlabel">
      <x>8</x>
@@ -550,8 +557,8 @@
    <slot>onSetColor()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>110</x>
-     <y>358</y>
+     <x>146</x>
+     <y>344</y>
     </hint>
     <hint type="destinationlabel">
      <x>7</x>
@@ -623,6 +630,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>trajectoryButton</sender>
+   <signal>clicked()</signal>
+   <receiver>window</receiver>
+   <slot>onTrajectory()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>80</x>
+     <y>547</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>5</x>
+     <y>538</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>onOpen()</slot>
@@ -646,5 +669,6 @@
   <slot>onDelete()</slot>
   <slot>onUndo()</slot>
   <slot>onReverse()</slot>
+  <slot>onTrajectory()</slot>
  </slots>
 </ui>

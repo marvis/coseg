@@ -55,6 +55,8 @@ private slots:
 	void onVolume();
 	
 	void onDeformation();
+
+	void onTrajectory();
 	
 	/**********************
 	 * View Group

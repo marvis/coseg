@@ -148,12 +148,12 @@ int mcmf3( int n, int s, int t, float &fcost )
     return flow;
 }
 
-bool bipartite_matching(vector<float>& weights, int nrows, int ncols, vector<int>& ids1, vector<int>& ids2)
+float bipartite_matching(vector<float>& weights, int nrows, int ncols, vector<int>& ids1, vector<int>& ids2)
 {
 	int numV = nrows + ncols + 4;
 	if(numV > NN) {
 		cerr<<"numV > 200"<<endl;
-		return false;
+		return -1.0;
 	}
 	assert(weights.size() == nrows * ncols);
 	float max_w = 0.0;
@@ -222,6 +222,7 @@ bool bipartite_matching(vector<float>& weights, int nrows, int ncols, vector<int
 	cap[a][b] =  numI;
 	float fcost;
 	int flow = mcmf3(numV, 0, numI + numJ + 3, fcost);
+	float sum_weight = 0.0;
 	for(a = 1; a <= numI; a++)
 	{
 		int i = a - 1;
@@ -236,8 +237,23 @@ bool bipartite_matching(vector<float>& weights, int nrows, int ncols, vector<int
 			{
 				ids1.push_back(i);
 				ids2.push_back(j);
+				sum_weight += weights[i * ncols + j];
 			}
 		}
 	}
-	return true;
+	return sum_weight;
+}
+
+float bipartite_matching(vector<float>& weights, int nrows, int ncols, vector<int>& ids)
+{
+	ids.clear();
+	vector<int> ids1, ids2;
+	bipartite_matching(weights, nrows, ncols, ids1, ids2);
+	assert(ids1.size() == ids2.size());
+	int result_num = ids1.size();
+	for(int i = 0; i < result_num; i++)
+	{
+		ids.push_back(ids1[i]);
+		ids.push_back(ids2[i]);
+	}
 }

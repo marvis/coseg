@@ -47,7 +47,7 @@ public slots:
      void setXRotation(int angle);
      void setYRotation(int angle);
      void setZRotation(int angle);
- private:
+ protected:
      int xRot;
      int yRot;
      int zRot;

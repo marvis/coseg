@@ -489,4 +489,3 @@ void GLWidget::loadTexture(unsigned char* texture, int w, int h, int d, int c)
 	lenZ = m_depth*ratio;
 
 }
-

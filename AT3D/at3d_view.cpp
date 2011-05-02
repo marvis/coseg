@@ -10,6 +10,7 @@
 #include "dialogs/finetuningdialog.h"
 #include "dialogs/createdialog.h"
 #include "extends/cell_track_ex.h"
+#include "extends/glwidget_ex.h"
 
 #include "at3d_view.h"
 using namespace std;
@@ -113,6 +114,11 @@ void AT3DVIEW::onLoadResult()
 
 void AT3DVIEW::onSaveFrames()
 {
+	if(celltrack == NULL || celltrack->frameNum() == 0 )	return;
+	QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"),"",QFileDialog::ShowDirsOnly|QFileDialog::DontResolveSymlinks);
+	if(dir == "") return;
+	else celltrack->exportImages("", (char*)dir.toStdString().c_str());
+	QMessageBox::information(this,"Save Frames", "Successfully Saved!");
 }
 //Edit Group
 void AT3DVIEW::onApplyFilter()
@@ -175,7 +181,7 @@ void AT3DVIEW::onSpeed()
 		{
 			if(frame_id == track->startTime())
 			{
-				item = new QTableWidgetItem(QObject::tr("%1").arg(0.0f,4,'f',2,QChar('0')));
+				item = new QTableWidgetItem(QObject::tr("%1(%2,%3,%4)").arg(0.0f,4,'f',2,QChar('0')).arg(cx1,4,'f',2,QChar('0')).arg(cy1,4,'f',2,QChar('0')).arg(cz1,4,'f',2,QChar('0')));
 				tableWidget->setItem(row,frame_id +1,item);
 				continue;
 			}
@@ -184,8 +190,9 @@ void AT3DVIEW::onSpeed()
 			cell->getCenter(cx2,cy2,cz2);
 			float distance = sqrt((cx2 - cx1)*(cx2 - cx1) + (cy2 - cy1)*(cy2 - cy1) + (cz2 - cz1)*(cz2 - cz1));
 			sum_distance += distance;
-			item = new QTableWidgetItem(QObject::tr("%1").arg(distance,4,'f',2,QChar('0')));
+			item = new QTableWidgetItem(QObject::tr("%1(%2,%3,%4)").arg(distance,4,'f',2,QChar('0')).arg(cx2,4,'f',2,QChar('0')).arg(cy2,4,'f',2,QChar('0')).arg(cz2,4,'f',2,QChar('0')));
 			tableWidget->setItem(row,frame_id +1,item);
+			cx1 = cx2; cy1 = cy2; cz1 = cz2;
 		}
 		item = new QTableWidgetItem(QObject::tr("%1").arg(sum_distance/(frame_id - track->startTime()-1),4,'f',2,QChar('0')));
 		tableWidget->setItem(row,frame_num+1,item);
@@ -296,8 +303,8 @@ void AT3DVIEW::onDeformation()
 			CellTrack::Cell* next_cell = prev_cell->getNextCell();
 			if(next_cell == NULL) break;
 			int overlap = prev_cell->getOverlap(next_cell);
-			deform = next_cell->getSize() - overlap;
-			deform /= prev_cell->getSize();// + next_cell->getSize() - overlap;
+			deform = prev_cell->getSize() + next_cell->getSize() - 2*overlap;
+			deform /= (prev_cell->getSize() + 2* overlap + next_cell->getSize())/2;// + next_cell->getSize() - overlap;
 			accum_deform *= deform;
 			item = new QTableWidgetItem(QObject::tr("%1").arg(deform,4,'f',2,QChar('0')));
 			tableWidget->setItem(row,frame_id +1,item);
@@ -312,6 +319,38 @@ void AT3DVIEW::onDeformation()
 	
 }
 
+void AT3DVIEW::onTrajectory()
+{
+	if(celltrack == NULL || celltrack->frameNum() == 0 )	return;
+	GLWidgetEX* glwidget_ex = new GLWidgetEX(NULL);
+	//GLWidget* glwidget_ex = new GLWidget(NULL);
+	int w = celltrack->getFrame(0)->width();
+	int h = celltrack->getFrame(0)->height();
+	int d = celltrack->getFrame(0)->depth();
+	glwidget_ex->setWidgetSize(w,h,d);
+	vector<CellTrack::Track*> tracks = getMarkedTracks();
+	vector<CellTrack::Track*>::iterator it = tracks.begin();
+	while(it != tracks.end())
+	{
+		CellTrack::Track* track = *it;
+		int color = track->getColor();
+		vector<float> trajectory;
+		CellTrack::Cell* cell = track->getStartCell();
+		while(cell != NULL)
+		{
+			float cx, cy, cz;
+			cell->getCenter(cx,cy,cz);
+			trajectory.push_back(cx);
+			trajectory.push_back(cy);
+			trajectory.push_back(cz);
+			cell = cell->getNextCell();
+		}
+		glwidget_ex->addTrajectory(trajectory, color);
+		it++;
+	}
+	glwidget_ex->show();
+	glwidget_ex->updateGL();
+}
 //View Group
 void AT3DVIEW::onNew3D()
 {

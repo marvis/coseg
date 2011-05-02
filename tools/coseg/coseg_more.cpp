@@ -19,6 +19,7 @@ int main(int argc, char* argv[])
 	{
 		tree_files.push_back(argv[i]);
 	}
+	//cell_track.setMethod(1);
 	cell_track.createFromTrees(tree_files);
 	cell_track.exportImages((char*)"cosegmore_out");
 }

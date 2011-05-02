@@ -15,6 +15,7 @@ LIBS += -ltiff \
 # Input
 HEADERS += widgets/glwidget.h \
     widgets/cellwidget.h \
+    widgets/tablewidget.h \
     ../myalgorithms.h \
     at3d_view.h \
     ../component_tree.h \
@@ -24,9 +25,8 @@ HEADERS += widgets/glwidget.h \
 	../CT3D/bipartite.h \
     dialogs/createdialog.h \
     dialogs/filterdialog.h \
-    extends/cell_track_ex.h \
     dialogs/finetuningdialog.h \
-    widgets/tablewidget.h
+    extends/cell_track_ex.h 
 FORMS += widgets/at3d_view.ui \
     dialogs/createdialog.ui \
     dialogs/finetuningdialog.ui \
@@ -34,6 +34,7 @@ FORMS += widgets/at3d_view.ui \
     widgets/tablewidget.ui
 SOURCES += widgets/glwidget.cpp \
     widgets/cellwidget.cpp \
+    widgets/tablewidget.cpp \
     ../myalgorithms.cpp \
     at3d_view.cpp \
     main.cpp \
@@ -44,6 +45,6 @@ SOURCES += widgets/glwidget.cpp \
 	../CT3D/bipartite.cpp \
     dialogs/createdialog.cpp \
     dialogs/filterdialog.cpp \
-    extends/cell_track_ex.cpp \
     dialogs/finetuningdialog.cpp \
-    widgets/tablewidget.cpp
+    extends/cell_track_ex.cpp \
+	extends/glwidget_ex.cpp
