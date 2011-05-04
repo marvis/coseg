@@ -611,13 +611,15 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 		frame1->setTree(tree1);
 		frame2->setTree(tree2);
 		
+		float sum_weights = 0.0;
 		for(i = 0; i < numVars1; i++)
 		{
 			for(int j = 0; j < numVars2; j++)
 			{
 				if(fabs(row[i * numVars2 + j] - 1.0) < 0.1)
 				{
-					cout<<"("<<i<<","<<j<<") ";
+					cout<<"("<<i<<","<<j<<")"<<weights[i*numVars2 + j]<<" ";
+					sum_weights += weights[i*numVars2 + j];
 					Cell* cell1 = new Cell;
 					Cell* cell2 = new Cell;
 					cell1->setTree(tree1);
@@ -632,6 +634,7 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 			}
 		}
 		cout<<endl;
+		cout<<"sum of weight : "<<sum_weights<<endl;
 
 		frames.push_back(frame1);
 		frames.push_back(frame2);
@@ -914,14 +917,14 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 		frame2->setTree(tree2);
 	
 		vector<int>& match = rev_wtt.back();
-		cout<<"match num : "<<match.size()<<endl;
+		//cout<<"match num : "<<match.size()<<endl;
 		assert(match.size() % 2 == 0);
 		int match_num = match.size() / 2;
 		for(int k = 0; k < match_num; k++)
 		{
 			int i = match[2*k];
 			int j = match[2*k + 1];
-			cout<<"("<<i<<","<<j<<") ";
+			cout<<"("<<i<<","<<j<<")"<<weights[i * numVars2 + j]<<" ";
 			Cell* cell1 = new Cell;
 			Cell* cell2 = new Cell;
 			cell1->setTree(tree1);
@@ -934,6 +937,7 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 			frame2->addCell(cell2);
 		}
 		cout<<endl;
+		cout<<"sum of weight : "<<wtt.back()<<endl;	
 		frames.push_back(frame1);
 		frames.push_back(frame2);
 
