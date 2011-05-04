@@ -1,7 +1,7 @@
 all:
 	cd create_view && make
 	cd coseg && make
-	cd ../AT3D/ && make
+	cd ../AT3D/ && qmake && make
 install:
 	cp coseg/coseg bin/
 	cp coseg/coseg0 bin/
