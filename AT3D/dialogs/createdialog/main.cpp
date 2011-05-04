@@ -5,7 +5,7 @@
 int main(int argc, char* argv[])
 {
 	QApplication* a = new QApplication(argc, argv);
-	CreateDialog* createdlg = new CreateDialog();
+	CreateCellTrackDialog* createdlg = new CreateCellTrackDialog();
 	createdlg->setExportButton();
 	CellTrackEX* cell_track = new CellTrackEX();
 	createdlg->setCellTrack(cell_track);

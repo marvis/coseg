@@ -233,7 +233,7 @@ float bipartite_matching(vector<float>& weights, int nrows, int ncols, vector<in
 //			{
 //				cout<<"fnet["<<a<<"]["<<b<<"] = "<<fnet[a][b]<<" fnet["<<b<<"]["<<a<<"] = "<<fnet[b][a]<<endl;
 //			}
-			if(ABS(fnet[a][b] - fnet[b][a]) == 1) 
+			if(fnet[a][b] - fnet[b][a] == 1 || fnet[a][b] - fnet[b][a] == -1) 
 			{
 				ids1.push_back(i);
 				ids2.push_back(j);
@@ -248,7 +248,7 @@ float bipartite_matching(vector<float>& weights, int nrows, int ncols, vector<in
 {
 	ids.clear();
 	vector<int> ids1, ids2;
-	bipartite_matching(weights, nrows, ncols, ids1, ids2);
+	float result =bipartite_matching(weights, nrows, ncols, ids1, ids2);
 	assert(ids1.size() == ids2.size());
 	int result_num = ids1.size();
 	for(int i = 0; i < result_num; i++)
@@ -256,4 +256,5 @@ float bipartite_matching(vector<float>& weights, int nrows, int ncols, vector<in
 		ids.push_back(ids1[i]);
 		ids.push_back(ids2[i]);
 	}
+	return result;
 }

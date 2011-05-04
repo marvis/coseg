@@ -288,7 +288,7 @@ void CreateCellTrackDialog::on_startTrackingButton_clicked()
         }
 		ui->progressBar->setValue(2*m_filelist.size() - 1);
 		//QMessageBox::information(this,tr("Create Finished"),tr("Create Successfully!"));
-        return QDialog::accept();
+        return ;// QDialog::accept();
     }
     else
     {

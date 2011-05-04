@@ -1037,6 +1037,35 @@ bool ComponentTree::load(ifstream& ifs, bool saveType)
 	else return false;
 }
 
+bool ComponentTree::saveGraph(char* graph_file)
+{
+	ofstream ofs(graph_file);
+	if(ofs.fail())
+	{
+		cerr<<"unable to open"<<graph_file<<endl;
+		return false;
+	}
+	ofs<<"graph G{"<<endl;
+	vector<Node*> nodes = m_root->getBreadthFirstNodes();
+	vector<Node*>::iterator it = nodes.begin();
+	while(it != nodes.end())
+	{
+		Node* node = *it;
+		vector<Node*> child_nodes = node->getChilds();
+		vector<Node*>::iterator itr = child_nodes.begin();
+		while(itr != child_nodes.end())
+		{
+			Node* child_node = *itr;
+			ofs<<node->getLabel()<<" -- "<<child_node->getLabel()<<";"<<endl;
+			itr++;
+		}
+		it++;
+	}
+	ofs<<"}"<<endl;
+	ofs.close();
+	return true;
+}
+
 void ComponentTree::clear()
 {
 	for(int i= 0; i< m_numNodes; i++)

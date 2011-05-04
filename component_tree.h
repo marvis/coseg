@@ -101,6 +101,7 @@ class ComponentTree
 		bool load(ifstream& ifs, bool saveType = true);
 		bool save(const char* to_tree_file) const;
 		bool save(ofstream& ofs, bool saveType = true) const;
+		bool saveGraph(char* graph_file);
 		void clear();
 
 		int width() const;

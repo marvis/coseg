@@ -19,4 +19,9 @@ int main(int argc, char * argv[])
 	tree.load(argv[1]);
 	tree.printTree();
 	//tree.printReverseAlphaMapping();
+
+	char graph_file[255];
+	strcat(graph_file, argv[1]);
+	strcat(graph_file, ".dot");
+	tree.saveGraph(graph_file);
 }
