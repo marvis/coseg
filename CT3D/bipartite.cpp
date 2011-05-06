@@ -51,6 +51,10 @@ using namespace std;
 #define NN 200
 #endif
 
+#ifndef EPSILON
+#define EPSILON 0.00001
+#endif
+
 #define ABS(a) ((a)<0 ? -(a) :a)
 // adjacency matrix (fill this up)
 int cap[NN][NN];
@@ -233,7 +237,7 @@ float bipartite_matching(vector<float>& weights, int nrows, int ncols, vector<in
 //			{
 //				cout<<"fnet["<<a<<"]["<<b<<"] = "<<fnet[a][b]<<" fnet["<<b<<"]["<<a<<"] = "<<fnet[b][a]<<endl;
 //			}
-			if(fnet[a][b] - fnet[b][a] == 1 || fnet[a][b] - fnet[b][a] == -1) 
+			if((fnet[a][b] - fnet[b][a] == 1 || fnet[a][b] - fnet[b][a] == -1) && weights[i * ncols + j] > EPSILON) 
 			{
 				ids1.push_back(i);
 				ids2.push_back(j);

@@ -29,6 +29,10 @@
 #define INT_MAX       2147483647
 #endif
 
+#ifndef EPSILON
+#define EPSILON 0.00001
+#endif
+
 using namespace std;
 typedef ComponentTree::Node TNode;
 
@@ -616,7 +620,7 @@ bool CellTrack::createFramesFromTrees(ComponentTree* tree1, ComponentTree* tree2
 		{
 			for(int j = 0; j < numVars2; j++)
 			{
-				if(fabs(row[i * numVars2 + j] - 1.0) < 0.1)
+				if(fabs(row[i * numVars2 + j] - 1.0) < 0.1 /*&& weights[i*numVars2 + j] > 0.01*/)
 				{
 					cout<<"("<<i<<","<<j<<")"<<weights[i*numVars2 + j]<<" ";
 					sum_weights += weights[i*numVars2 + j];

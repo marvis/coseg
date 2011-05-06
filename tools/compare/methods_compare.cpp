@@ -379,7 +379,7 @@ bool methods_compare(ComponentTree* tree1, ComponentTree* tree2)
 		weights1.resize(numIds1 * numIds2);
 		vector<int> ids1;  // store the matching results
 		vector<int> ids2;  // same as above
-		int non_zero_num = 0;
+		//int non_zero_num = 0;
 		for(int i = 0; i < numIds1; i++)
 		{
 			int label1 = method0_ids1[i];
@@ -391,20 +391,20 @@ bool methods_compare(ComponentTree* tree1, ComponentTree* tree2)
 		}
 		float total_weight = bipartite_matching(weights1, numIds1, numIds2, ids1, ids2);
 		cout<<"overlap of tree1's two output : "<<endl;
-		float mean_weight = total_weight / ids1.size();
+		//float mean_weight = total_weight / ids1.size();
 		for(int i = 0; i < ids1.size(); i++)
 		{
 			int label1 = method0_ids1[ids1[i]];
 			int label2 = method1_ids1[ids2[i]];
 			cout<<"("<<label1<<","<<label2<<")"<<weights[label1 * numVars2 + label2]<<" ";
-			if(weights[label1 * numVars2 + label2] > 0.0f) non_zero_num++;
+			//if(weights[label1 * numVars2 + label2] > 0.0f) non_zero_num++;
 		}
 		cout<<endl;
 		assert(ids1.size() == ids2.size());
-		float mean_weight1 = total_weight / ids1.size();
-		float mean_weight2 = total_weight / non_zero_num;
-		cout<<"match num (with zero) : "<<ids1.size()<<"  mean weight : "<<mean_weight1<<endl;
-		cout<<"match num (without zero): "<<non_zero_num<<"  mean weight : "<<mean_weight2<<endl;
+		float mean_weight = total_weight / ids1.size();
+		//float mean_weight2 = total_weight / non_zero_num;
+		cout<<"match num : "<<ids1.size()<<"  mean weight : "<<mean_weight<<endl;
+		//cout<<"match num (without zero): "<<non_zero_num<<"  mean weight : "<<mean_weight2<<endl;
 	}
 	if(true)
 	{
@@ -420,7 +420,7 @@ bool methods_compare(ComponentTree* tree1, ComponentTree* tree2)
 		weights1.resize(numIds1 * numIds2);
 		vector<int> ids1;  // store the matching results
 		vector<int> ids2;  // same as above
-		int non_zero_num = 0;
+		//int non_zero_num = 0;
 		for(int i = 0; i < numIds1; i++)
 		{
 			int label1 = method0_ids1[i];
@@ -436,15 +436,15 @@ bool methods_compare(ComponentTree* tree1, ComponentTree* tree2)
 		{
 			int label1 = method0_ids1[ids1[i]];
 			int label2 = method1_ids1[ids2[i]];
-			if(weights[label1 * numVars2 + label2 ] > 0.0f) non_zero_num++;
+			//if(weights[label1 * numVars2 + label2 ] > 0.0f) non_zero_num++;
 			cout<<"("<<label1<<","<<label2<<")"<<weights[label1 * numVars2 + label2]<<" ";
 		}
 		cout<<endl;
 		assert(ids1.size() == ids2.size());
-		float mean_weight1 = total_weight / ids1.size();
-		float mean_weight2 = total_weight / non_zero_num;
-		cout<<"match num (with zero) : "<<ids1.size()<<"  mean weight : "<<mean_weight1<<endl;
-		cout<<"match num (without zero): "<<non_zero_num<<"  mean weight : "<<mean_weight2<<endl;
+		float mean_weight = total_weight / ids1.size();
+		//float mean_weight2 = total_weight / non_zero_num;
+		cout<<"match num : "<<ids1.size()<<"  mean weight : "<<mean_weight<<endl;
+		//cout<<"match num (without zero): "<<non_zero_num<<"  mean weight : "<<mean_weight2<<endl;
 	}
 	return true;
 }
