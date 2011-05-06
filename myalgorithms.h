@@ -42,4 +42,6 @@ void readValue(ifstream &ifs, unsigned short &v);
 void readValue(ifstream &ifs, short &v);
 void readValue(ifstream &ifs, float &v);
 void readValue(ifstream &ifs, double &v);
+void SetStartTime();
+void PrintElapsedTime(const char* message = NULL);
 #endif

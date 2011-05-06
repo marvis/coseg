@@ -15,3 +15,5 @@ install:
 clean:
 	cd create_view && make clean
 	cd coseg && make clean
+	cd compare && make clean
+	cd ../AT3D/ && qmake && make clean

@@ -13,6 +13,7 @@
 #include <iostream>
 #include <cassert>
 
+#include "../../myalgorithms.h"      // SetStartTime PrintElapsedTime
 #include "../../component_tree.h"
 #include "lp_lib.h"
 #include "../../CT3D/bipartite.h"
@@ -32,6 +33,7 @@ int main(int argc, char* argv[])
 	methods_compare(tree1,tree2);
 	time(&end);
 	cout<<"time elapsed (s) : "<<difftime(end, start)<<endl;
+
 }
 
 int max_item(vector<float> items)
@@ -65,6 +67,8 @@ bool methods_compare(ComponentTree* tree1, ComponentTree* tree2)
 	vector<int> method0_ids2;
 	vector<int> method1_ids1;
 	vector<int> method1_ids2;
+	float sum_weights1 = 0.0;
+	float sum_weights2 = 0.0;
 	if(1) // ILP programming
 	{
 		if(tree1->width() != tree2->width() || tree1->height() != tree2->height() || tree1->depth() != tree2->depth())
@@ -76,6 +80,7 @@ bool methods_compare(ComponentTree* tree1, ComponentTree* tree2)
 		// 1. get weights
 		vector<float> weights;
 		tree1->setWeightMatrix(tree2, weights);
+		SetStartTime();
 		int numVars1 = (int)tree1->nodeNum();
 		int numVars2 = (int)tree2->nodeNum();
 		assert((int)weights.size() == numVars1 * numVars2);
@@ -176,10 +181,12 @@ bool methods_compare(ComponentTree* tree1, ComponentTree* tree2)
 		cout<<endl;
 		assert(method0_ids1.size() == method0_ids2.size());
 		cout<<"match num : "<<method0_ids1.size()<<"  sum of weight : "<<sum_weights<<endl;
+		sum_weights1 = sum_weights;
 
 		if(colno != NULL) free(colno);
 		if(row != NULL) free(row);
 		if(lp != NULL) delete_lp(lp);
+		PrintElapsedTime();
 	}
 	if(true)  // three point condition
 	{
@@ -191,6 +198,7 @@ bool methods_compare(ComponentTree* tree1, ComponentTree* tree2)
 		// 1. get weights
 		vector<float> weights;
 		tree1->setWeightMatrix(tree2, weights);
+		SetStartTime();
 		//assert((int)weights.size() == numVars1 * numVars2);
 
 		vector<ComponentTree::Node*> nodes1 = tree1->root()->getPostOrderNodes();
@@ -362,6 +370,10 @@ bool methods_compare(ComponentTree* tree1, ComponentTree* tree2)
 		cout<<endl;
 		assert(method1_ids1.size() == method1_ids2.size());
 		cout<<"match num : "<<method1_ids1.size()<<"  sum of weight : "<<wtt.back()<<endl;	
+		PrintElapsedTime();
+		sum_weights2 = wtt.back();
+		float percent = sum_weights2 / sum_weights1;
+		cout<<"weight percentage : "<<percent<<endl;
 	}
 
 	cout<<endl<<"============================ overlap ============================"<<endl;

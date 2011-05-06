@@ -15,6 +15,11 @@
 #include <cstdlib>
 #include <cstring>
 
+#ifndef WIN32
+	#include <sys/time.h>
+#else
+	#include <time.h>
+#endif
 using namespace std;
 
 //======================================================================================
@@ -530,3 +535,49 @@ void readValue(ifstream &ifs, float& v)
     }
 }
 
+#ifndef WIN32
+	struct timeval tv;
+	unsigned long startTime, crtTime, prevTime;
+	unsigned long phaseCompletionTime, elapsedTime;
+#else
+	DWORD   startTime, crtTime, prevTime;
+	DWORD   phaseCompletionTime, elapsedTime;
+#endif
+void SetStartTime()
+{
+#ifdef WIN32
+	startTime = GetTickCount();
+#else
+	gettimeofday(&tv, NULL);
+	startTime = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+#endif
+	prevTime = startTime;
+	return;
+}
+
+void PrintElapsedTime(const char* message)
+{
+#ifdef WIN32
+	crtTime = GetTickCount();
+#else
+	gettimeofday(&tv, NULL);
+	crtTime = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+#endif
+	phaseCompletionTime = crtTime - prevTime;
+	elapsedTime = crtTime - startTime;
+	prevTime = crtTime;
+
+	if(message == NULL || strlen(message) == 0) {
+		printf("Total time: %d ms.\n", elapsedTime);
+	}
+	else {
+		if(strcmp(message, " ") == 0) {
+			printf("completed in: %d ms. Total time: %d ms.\n", phaseCompletionTime, elapsedTime);
+		}
+		else {
+			printf("%s\n"
+					"\tcompleted in: %d ms. Total time: %d ms.\n", message, phaseCompletionTime, elapsedTime);
+		}
+	}
+	return;
+}
