@@ -12,7 +12,8 @@ methods_compare: $(OBJ_COMPARE)
 
 (%.o):(%.cpp)
 	$(CXX) $(CXXFLAGS) -c $< -o $*.o
-
+install:
+	cp methods_compare ../bin
 clean:
 	rm -f *.o
 	rm -f ../../*.o

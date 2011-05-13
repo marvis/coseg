@@ -577,6 +577,11 @@ bool ComponentTree::create(char * imgfile , int _minSize , int _maxSize, int _si
 	int _channels = 1;
 	unsigned char * img = NULL;
 	img = readtiff(imgfile, &_width,&_height, &_depth, &_channels);
+	if((long)_width * (long)_height * (long)_depth >= 2147483648) 
+	{
+		cerr<<"image size too large "<<_width<<"*"<<_height<<"*"<<_depth<<" >= 2147483648"<<endl;
+		return false;
+	}
 
 	//check parameters
 	assert(_width * _height * _depth <= 2147483647); //don't use m_numPixels < 2147483648   (2^31)

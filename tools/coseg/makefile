@@ -18,7 +18,10 @@ coseg1:$(OBJ_COSEG1)
 
 (%.o):(%.cpp)
 	$(CXX) $(CXXFLAGS) -c $< -o $*.o
-
+install:
+	cp coseg ../bin
+	cp coseg0 ../bin
+	cp coseg1 ../bin
 clean:
 	rm -f *.o
 	rm -f ../../*.o

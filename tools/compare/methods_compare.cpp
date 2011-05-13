@@ -79,7 +79,9 @@ bool methods_compare(ComponentTree* tree1, ComponentTree* tree2)
 
 		// 1. get weights
 		vector<float> weights;
+		SetStartTime();
 		tree1->setWeightMatrix(tree2, weights);
+		PrintElapsedTime();
 		SetStartTime();
 		int numVars1 = (int)tree1->nodeNum();
 		int numVars2 = (int)tree2->nodeNum();
@@ -197,7 +199,9 @@ bool methods_compare(ComponentTree* tree1, ComponentTree* tree2)
 		}
 		// 1. get weights
 		vector<float> weights;
+		SetStartTime();
 		tree1->setWeightMatrix(tree2, weights);
+		PrintElapsedTime();
 		SetStartTime();
 		//assert((int)weights.size() == numVars1 * numVars2);
 

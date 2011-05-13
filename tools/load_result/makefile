@@ -10,7 +10,8 @@ load_result_images:$(OBJ_LOAD_RESULT_IMAGES)
 
 (%.o):(%.cpp)
 	$(CXX) $(CXXFLAGS) -c $< -o $*.o
-
+install:
+	cp load_result_images ../bin
 clean:
 	rm *.o
 	rm ../../*.o
